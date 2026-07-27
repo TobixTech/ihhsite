@@ -10,9 +10,9 @@ import type { WithdrawalCharges } from "@/lib/withdrawal"
 const DEFAULT_CHARGES: WithdrawalCharges = {
   fixedFeeNaira: 100,
   percentageFee: 2,
-  minWithdrawal: 1000,
-  minDeposit: 3000,
-  minInvestment: 3000,
+  minWithdrawal: 500,
+  minDeposit: 1000,
+  minInvestment: 1000,
 }
 
 /**

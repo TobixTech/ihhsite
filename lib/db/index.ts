@@ -106,6 +106,21 @@ pool.query(`
     "completedAt"  timestamp
   );
 
+  CREATE TABLE IF NOT EXISTS custom_plan (
+    id           serial PRIMARY KEY,
+    name         text NOT NULL,
+    price        numeric(14,2) NOT NULL,
+    daily        numeric(14,2) NOT NULL,
+    "durationDays" integer NOT NULL DEFAULT 7,
+    points       integer NOT NULL DEFAULT 0,
+    "maxPurchases" integer,
+    "isActive"   boolean NOT NULL DEFAULT false,
+    "comingSoon" boolean NOT NULL DEFAULT true,
+    "sortOrder"  integer NOT NULL DEFAULT 0,
+    "createdAt"  timestamp NOT NULL DEFAULT now(),
+    "updatedAt"  timestamp NOT NULL DEFAULT now()
+  );
+
   ALTER TABLE bank_account ADD COLUMN IF NOT EXISTS "sabussPin" text;
   ALTER TABLE deposit ADD COLUMN IF NOT EXISTS "sabussRef" text;
 `).catch(() => { /* safe to ignore — tables/columns already exist or DB not connected yet */ })

@@ -315,6 +315,23 @@ export const promoterCode = pgTable("promoter_code", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// Admin-managed dynamic packages. These augment (not replace) the static PLANS array.
+// id starts at 100 to avoid collision with static plan ids (1-20).
+export const customPlan = pgTable("custom_plan", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  price: numeric("price", { precision: 14, scale: 2 }).notNull(),
+  daily: numeric("daily", { precision: 14, scale: 2 }).notNull(),
+  durationDays: integer("durationDays").notNull().default(7),
+  points: integer("points").notNull().default(0),
+  maxPurchases: integer("maxPurchases"),          // null = unlimited
+  isActive: boolean("isActive").notNull().default(false), // false = coming soon
+  comingSoon: boolean("comingSoon").notNull().default(true),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 // System config — stores platform-wide settings like withdrawal charges
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),

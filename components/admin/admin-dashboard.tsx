@@ -88,6 +88,7 @@ import { approveDeposit, rejectDeposit } from "@/app/actions/deposit"
 import { PlanSlotsPanel } from "@/components/admin/plan-slots-panel"
 import { WithdrawalChargesConfig } from "@/components/admin/withdrawal-charges-config"
 import { TelegramConfig } from "@/components/admin/telegram-config"
+import { PackageManagerPanel } from "@/components/admin/package-manager-panel"
 
 const POLL_INTERVAL = 20_000 // 20 seconds
 
@@ -324,6 +325,20 @@ type DrawRound = {
   executedAt: Date | string | null
 }
 
+type CustomPlan = {
+  id: number
+  name: string
+  price: string
+  daily: string
+  durationDays: number
+  points: number
+  maxPurchases: number | null
+  isActive: boolean
+  comingSoon: boolean
+  sortOrder: number
+  createdAt: Date | string
+}
+
 type AdminData = {
   stats: Stats
   withdrawals: Withdrawal[]
@@ -343,6 +358,7 @@ type AdminData = {
   drawSlots: DrawSlotRow[]
   gameStats: GameStats
   gameConfig: GameConfig
+  customPlans: CustomPlan[]
 }
 
 type SlotRow = { planId: number; totalSlots: number | null; soldSlots: number; isActive: boolean }
@@ -380,6 +396,7 @@ export function AdminDashboard(initial: AdminData & { planSlots?: SlotRow[] }) {
   }, [refresh])
 
   const { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig } = data
+  // customPlans used directly via data.customPlans below
 
   const TAB_ICONS: Record<Tab, React.ReactNode> = {
     Overview:        <BarChart3 className="h-4 w-4" />,
@@ -472,6 +489,12 @@ export function AdminDashboard(initial: AdminData & { planSlots?: SlotRow[] }) {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <WithdrawalChargesConfig onUpdate={() => refresh()} />
                 <TelegramConfig onUpdate={() => refresh()} />
+              </div>
+              <div className="mt-4">
+                <PackageManagerPanel
+                  initialPlans={data.customPlans ?? []}
+                  onUpdate={() => refresh()}
+                />
               </div>
             </>
           )}

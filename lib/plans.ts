@@ -72,10 +72,10 @@ export const SITE = {
   short: 'Crox',
   tagline: 'Trade · Earn · Grow',
   packageCount: 11,          // 7 active + 4 coming soon
-  signInBonus: 100,
-  welcomeBonus: 600,
+  signInBonus: 50,
+  welcomeBonus: 100,
   investmentBonusPercent: 1,
-  minWithdrawal: 1000,
+  minWithdrawal: 500,
   minDeposit: 1000,
   withdrawalCharge: 18,
   referralLevel1: 21,

@@ -95,7 +95,7 @@ export default async function ProductsPage() {
         {/* Footer note */}
         <div className="rounded-2xl border border-border/40 bg-card/50 px-4 py-3 text-center">
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Each package runs for <span className="font-semibold text-foreground">7 days</span> with daily payouts.
+            Each package runs for <span className="font-semibold text-foreground">15 days</span> with daily payouts.
             Max <span className="font-semibold text-foreground">5 purchases</span> per package.
             Min. deposit {formatNaira(SITE.minDeposit)}.
           </p>

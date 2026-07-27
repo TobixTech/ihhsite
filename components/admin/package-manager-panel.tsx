@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import {
   Package,
   Plus,
@@ -44,7 +44,7 @@ const EMPTY_FORM: CustomPlanInput = {
   name: "",
   price: 0,
   daily: 0,
-  durationDays: 7,
+  durationDays: 15,
   points: 0,
   maxPurchases: 5,
   comingSoon: false,
@@ -62,6 +62,11 @@ export function PackageManagerPanel({ initialPlans, onUpdate }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<CustomPlanInput>(EMPTY_FORM)
   const [pending, startTransition] = useTransition()
+
+  // Sync local list whenever the parent refreshes data (e.g. after create/delete)
+  useEffect(() => {
+    setPlans(initialPlans)
+  }, [initialPlans])
 
   function openCreate() {
     setEditingId(null)

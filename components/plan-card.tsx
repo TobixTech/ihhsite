@@ -15,7 +15,7 @@ export type SlotInfo = {
   isActive: boolean
 }
 
-// Per-tier gradient and color config
+// Per-tier gradient and color config (legacy + new phases)
 const TIER_CONFIG: Record<string, {
   gradient: string
   headerText: string
@@ -27,6 +27,7 @@ const TIER_CONFIG: Record<string, {
   ring: string
   dot: string
 }> = {
+  // ── Legacy tiers (kept for existing investment cards) ──
   Foundation: {
     gradient:   "from-slate-700 via-slate-800 to-slate-900",
     headerText: "text-slate-100",
@@ -60,6 +61,52 @@ const TIER_CONFIG: Record<string, {
     ring:       "ring-sky-400/40",
     dot:        "bg-sky-300",
   },
+  // ── Active exchange tiers ──
+  Starter: {
+    gradient:   "from-blue-900 via-blue-800 to-slate-900",
+    headerText: "text-white",
+    accentBg:   "bg-white/10",
+    accentText: "text-blue-100",
+    badge:      "bg-white/15 text-white border-white/15",
+    btn:        "bg-white hover:bg-blue-50",
+    btnText:    "text-blue-900",
+    ring:       "ring-blue-600/30",
+    dot:        "bg-blue-400",
+  },
+  Growth: {
+    gradient:   "from-blue-500 via-blue-600 to-indigo-700",
+    headerText: "text-white",
+    accentBg:   "bg-white/15",
+    accentText: "text-blue-100",
+    badge:      "bg-white/20 text-white border-white/20",
+    btn:        "bg-white hover:bg-blue-50",
+    btnText:    "text-blue-800",
+    ring:       "ring-blue-400/40",
+    dot:        "bg-blue-300",
+  },
+  Core: {
+    gradient:   "from-amber-500 via-amber-600 to-orange-700",
+    headerText: "text-white",
+    accentBg:   "bg-white/15",
+    accentText: "text-amber-100",
+    badge:      "bg-white/20 text-white border-white/20",
+    btn:        "bg-white hover:bg-amber-50",
+    btnText:    "text-amber-800",
+    ring:       "ring-amber-400/40",
+    dot:        "bg-amber-300",
+  },
+  Elite: {
+    gradient:   "from-indigo-900 via-slate-800 to-slate-900",
+    headerText: "text-white",
+    accentBg:   "bg-white/10",
+    accentText: "text-indigo-100",
+    badge:      "bg-white/15 text-white border-white/15",
+    btn:        "bg-white hover:bg-slate-50",
+    btnText:    "text-slate-800",
+    ring:       "ring-indigo-500/30",
+    dot:        "bg-indigo-400",
+  },
+  // Fallback
   Skyline: {
     gradient:   "from-amber-500 via-orange-500 to-rose-600",
     headerText: "text-white",
@@ -78,19 +125,23 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
   const [pending, startTransition] = useTransition()
 
   const tier = PLAN_TIERS[plan.id]
-  const cfg = TIER_CONFIG[tier?.phase ?? "Structure"]
+  const cfg = TIER_CONFIG[tier?.phase ?? "Starter"]
 
   // Slot states
   const isSoldOut = slot
     ? (!slot.isActive || (slot.totalSlots !== null && slot.soldSlots >= slot.totalSlots))
     : false
-  const hasLimit    = slot?.totalSlots != null
-  const remaining   = hasLimit ? Math.max(0, (slot!.totalSlots ?? 0) - slot!.soldSlots) : null
-  const totalSlots  = slot?.totalSlots ?? null
-  const fillPct     = hasLimit && totalSlots ? Math.min(100, Math.round((slot!.soldSlots / totalSlots) * 100)) : 0
+  const hasLimit   = slot?.totalSlots != null
+  const remaining  = hasLimit ? Math.max(0, (slot!.totalSlots ?? 0) - slot!.soldSlots) : null
+  const totalSlots = slot?.totalSlots ?? null
+  const fillPct    = hasLimit && totalSlots ? Math.min(100, Math.round((slot!.soldSlots / totalSlots) * 100)) : 0
 
-  // ROI percentage
-  const roiPct = Math.round(((plan.total - plan.price) / plan.price) * 100)
+  const isComingSoon = !!plan.comingSoon
+
+  // ROI percentage (only meaningful for active plans)
+  const roiPct = plan.price > 0 && plan.total > 0
+    ? Math.round(((plan.total - plan.price) / plan.price) * 100)
+    : 0
 
   function handleBuy() {
     startTransition(async () => {
@@ -109,21 +160,14 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
     <article
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-2xl ring-1 transition-all duration-300",
-        isSoldOut ? "opacity-70 ring-border/40" : [cfg.ring, "hover:-translate-y-1 hover:shadow-xl"],
+        isSoldOut || isComingSoon
+          ? "opacity-80 ring-border/40"
+          : [cfg.ring, "hover:-translate-y-1 hover:shadow-xl"],
       )}
     >
       {/* ---- Gradient header ---- */}
       <div className={cn("relative bg-gradient-to-br p-5", cfg.gradient)}>
-        {/* Decorative dot grid */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-          }}
-        />
-
-        {/* Top row: tier badge + popular + slots */}
+        {/* Top row: tier badge + popular + maxPurchases + slots */}
         <div className="relative flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <span className={cn("h-2 w-2 rounded-full", cfg.dot)} />
@@ -131,13 +175,18 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
               {tier?.phase}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {plan.popular && !isSoldOut && (
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+            {plan.popular && !isSoldOut && !isComingSoon && (
               <span className="flex items-center gap-0.5 rounded-full bg-white/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
                 <Zap className="h-2.5 w-2.5" /> Popular
               </span>
             )}
-            {hasLimit && !isSoldOut && remaining !== null && (
+            {plan.maxPurchases && !isComingSoon && (
+              <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold", cfg.badge)}>
+                Up to {plan.maxPurchases}&times;
+              </span>
+            )}
+            {hasLimit && !isSoldOut && !isComingSoon && remaining !== null && (
               <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-bold", cfg.badge)}>
                 {remaining} left
               </span>
@@ -161,19 +210,21 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
           </div>
         </div>
 
-        {/* ROI pill */}
-        <div className="relative mt-3">
-          <span className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-            cfg.accentBg, cfg.accentText,
-          )}>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-            {roiPct}% total ROI over {plan.durationDays} days
-          </span>
-        </div>
+        {/* ROI pill — only for active plans */}
+        {!isComingSoon && roiPct > 0 && (
+          <div className="relative mt-3">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+              cfg.accentBg, cfg.accentText,
+            )}>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+              {roiPct}% total ROI over {plan.durationDays} days
+            </span>
+          </div>
+        )}
 
         {/* Slot fill bar */}
-        {hasLimit && !isSoldOut && totalSlots && (
+        {hasLimit && !isSoldOut && !isComingSoon && totalSlots && (
           <div className="relative mt-3">
             <div className="h-1 w-full overflow-hidden rounded-full bg-white/20">
               <div
@@ -188,7 +239,7 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
         )}
 
         {/* Sold out overlay */}
-        {isSoldOut && (
+        {isSoldOut && !isComingSoon && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
             <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-4 py-2">
               <Lock className="h-3.5 w-3.5 text-white/70" />
@@ -196,22 +247,47 @@ export function PlanCard({ plan, slot }: { plan: Plan; slot?: SlotInfo }) {
             </div>
           </div>
         )}
+
+        {/* Coming Soon overlay */}
+        {isComingSoon && (
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-950/60 backdrop-blur-[2px]">
+            <div className="flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-900/70 px-4 py-2">
+              <Clock className="h-3.5 w-3.5 text-blue-300" />
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-200">Coming Soon</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ---- Stats body ---- */}
       <div className="flex flex-1 flex-col gap-3 bg-card p-4">
-        {/* Daily + Duration + Total row */}
-        <div className="grid grid-cols-3 gap-2">
-          <StatPill label="Daily" value={formatNaira(plan.daily)} />
-          <StatPill label="Duration" value={`${plan.durationDays}d`} />
-          <StatPill label="Total" value={formatNaira(plan.total)} highlight />
-        </div>
+        {isComingSoon ? (
+          /* Coming soon — simplified body */
+          <div className="flex flex-col items-center gap-2 py-2 text-center">
+            <Clock className="h-5 w-5 text-primary/60" />
+            <p className="text-xs font-medium text-muted-foreground">
+              Full details dropping soon. Stay tuned.
+            </p>
+          </div>
+        ) : (
+          /* Active plan — daily + duration + total */
+          <div className="grid grid-cols-3 gap-2">
+            <StatPill label="Daily" value={formatNaira(plan.daily)} />
+            <StatPill label="Duration" value={`${plan.durationDays}d`} />
+            <StatPill label="Total" value={formatNaira(plan.total)} highlight />
+          </div>
+        )}
 
         {/* Action button */}
         {isSoldOut ? (
           <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/40 bg-secondary/40 py-3 text-sm font-semibold text-muted-foreground">
             <Lock className="h-4 w-4" />
             Sold Out
+          </div>
+        ) : isComingSoon ? (
+          <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-950/30 py-3 text-sm font-semibold text-blue-400/80">
+            <Clock className="h-4 w-4" />
+            Coming Soon
           </div>
         ) : (
           <button

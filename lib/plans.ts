@@ -5,11 +5,16 @@ export type Plan = {
   daily: number
   total: number
   durationDays: number
+  points?: number
   popular?: boolean
+  soldOut?: boolean       // legacy plans — hidden from products page
+  maxPurchases?: number   // max times a single user can buy this plan
+  comingSoon?: boolean    // shows Coming Soon badge, blocks purchase
 }
 
-// Construction tier labels — grouped by phase
+// Tier labels — grouped by exchange phase
 export const PLAN_TIERS: Record<number, { phase: string; label: string; color: string }> = {
+  // Legacy plans (soldOut) — kept for existing investment display
   1:  { phase: 'Foundation', label: 'F-01', color: 'text-stone-400' },
   2:  { phase: 'Foundation', label: 'F-02', color: 'text-stone-400' },
   3:  { phase: 'Foundation', label: 'F-03', color: 'text-stone-400' },
@@ -19,37 +24,59 @@ export const PLAN_TIERS: Record<number, { phase: string; label: string; color: s
   7:  { phase: 'Framework',  label: 'FW-01', color: 'text-sky-400' },
   8:  { phase: 'Framework',  label: 'FW-02', color: 'text-sky-400' },
   9:  { phase: 'Framework',  label: 'FW-03', color: 'text-sky-400' },
-  10: { phase: 'Skyline',    label: 'SK-01', color: 'text-amber-400' },
-  11: { phase: 'Skyline',    label: 'SK-02', color: 'text-amber-400' },
-  12: { phase: 'Skyline',    label: 'SK-03', color: 'text-amber-400' },
+  // Active packages
+  10: { phase: 'Starter', label: 'STR-1', color: 'text-primary' },
+  11: { phase: 'Starter', label: 'STR-2', color: 'text-primary' },
+  12: { phase: 'Starter', label: 'STR-3', color: 'text-primary' },
+  13: { phase: 'Growth',  label: 'GRW-1', color: 'text-sky-400' },
+  14: { phase: 'Growth',  label: 'GRW-2', color: 'text-sky-400' },
+  15: { phase: 'Growth',  label: 'GRW-3', color: 'text-sky-400' },
+  16: { phase: 'Core',    label: 'PRO',   color: 'text-amber-400' },
+  // Coming soon packages
+  17: { phase: 'Elite', label: 'ELT-1', color: 'text-amber-400' },
+  18: { phase: 'Elite', label: 'ELT-2', color: 'text-amber-400' },
+  19: { phase: 'Elite', label: 'ELT-3', color: 'text-amber-400' },
+  20: { phase: 'Elite', label: 'ELT-4', color: 'text-amber-400' },
 }
 
-// All plans run 90 days. Daily returns = 21% of investment price.
-// Total = daily × 90
+// All new plans run 7 days. Daily rate = 22% of investment price.
+// Total = daily × 7
 export const PLANS: Plan[] = [
-  { id: 1,  name: 'Foundation F-01', price: 3000,   daily: 630,    total: 56700,    durationDays: 90 },
-  { id: 2,  name: 'Foundation F-02', price: 6500,   daily: 1365,   total: 122850,   durationDays: 90 },
-  { id: 3,  name: 'Foundation F-03', price: 10000,  daily: 2100,   total: 189000,   durationDays: 90 },
-  { id: 4,  name: 'Structure S-01',  price: 15000,  daily: 3150,   total: 283500,   durationDays: 90 },
-  { id: 5,  name: 'Structure S-02',  price: 20000,  daily: 4200,   total: 378000,   durationDays: 90 },
-  { id: 6,  name: 'Structure S-03',  price: 30000,  daily: 6300,   total: 567000,   durationDays: 90, popular: true },
-  { id: 7,  name: 'Framework FW-01', price: 50000,  daily: 10500,  total: 945000,   durationDays: 90 },
-  { id: 8,  name: 'Framework FW-02', price: 80000,  daily: 16800,  total: 1512000,  durationDays: 90 },
-  { id: 9,  name: 'Framework FW-03', price: 100000, daily: 21000,  total: 1890000,  durationDays: 90 },
-  { id: 10, name: 'Skyline SK-01',   price: 200000, daily: 42000,  total: 3780000,  durationDays: 90 },
-  { id: 11, name: 'Skyline SK-02',   price: 300000, daily: 63000,  total: 5670000,  durationDays: 90 },
-  { id: 12, name: 'Skyline SK-03',   price: 500000, daily: 105000, total: 9450000,  durationDays: 90 },
+  // ── Legacy plans (soldOut) — retained for existing investor records ──
+  { id: 1,  name: 'Foundation F-01', price: 3000,   daily: 630,    total: 56700,    durationDays: 90, soldOut: true },
+  { id: 2,  name: 'Foundation F-02', price: 6500,   daily: 1365,   total: 122850,   durationDays: 90, soldOut: true },
+  { id: 3,  name: 'Foundation F-03', price: 10000,  daily: 2100,   total: 189000,   durationDays: 90, soldOut: true },
+  { id: 4,  name: 'Structure S-01',  price: 15000,  daily: 3150,   total: 283500,   durationDays: 90, soldOut: true },
+  { id: 5,  name: 'Structure S-02',  price: 20000,  daily: 4200,   total: 378000,   durationDays: 90, soldOut: true },
+  { id: 6,  name: 'Structure S-03',  price: 30000,  daily: 6300,   total: 567000,   durationDays: 90, soldOut: true },
+  { id: 7,  name: 'Framework FW-01', price: 50000,  daily: 10500,  total: 945000,   durationDays: 90, soldOut: true },
+  { id: 8,  name: 'Framework FW-02', price: 80000,  daily: 16800,  total: 1512000,  durationDays: 90, soldOut: true },
+  { id: 9,  name: 'Framework FW-03', price: 100000, daily: 21000,  total: 1890000,  durationDays: 90, soldOut: true },
+  // ── Active packages (7) ──
+  { id: 10, name: 'Nano',  price: 1000, daily: 220,  total: 1540, durationDays: 7, points: 50,  maxPurchases: 5 },
+  { id: 11, name: 'Micro', price: 1500, daily: 330,  total: 2310, durationDays: 7, points: 75,  maxPurchases: 5 },
+  { id: 12, name: 'Spark', price: 2000, daily: 440,  total: 3080, durationDays: 7, points: 100, maxPurchases: 5 },
+  { id: 13, name: 'Boost', price: 3000, daily: 660,  total: 4620, durationDays: 7, points: 140, maxPurchases: 5 },
+  { id: 14, name: 'Pulse', price: 4000, daily: 880,  total: 6160, durationDays: 7, points: 180, maxPurchases: 5 },
+  { id: 15, name: 'Flow',  price: 5000, daily: 1100, total: 7700, durationDays: 7, points: 220, maxPurchases: 5 },
+  { id: 16, name: 'Core',  price: 7500, daily: 1700, total: 11900, durationDays: 7, points: 300, maxPurchases: 5, popular: true },
+  // ── Coming soon packages (4) ──
+  { id: 17, name: 'Surge', price: 10000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
+  { id: 18, name: 'Prime', price: 15000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
+  { id: 19, name: 'Apex',  price: 20000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
+  { id: 20, name: 'Elite', price: 50000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
 ]
 
 export const SITE = {
-  name: 'C.I.Limited',
-  short: 'C.I.L',
-  tagline: 'Construction Investment Limited',
+  name: 'Crox Exchange',
+  short: 'Crox',
+  tagline: 'Trade · Earn · Grow',
+  packageCount: 11,          // 7 active + 4 coming soon
   signInBonus: 100,
   welcomeBonus: 600,
   investmentBonusPercent: 1,
   minWithdrawal: 1000,
-  minDeposit: 3000,
+  minDeposit: 1000,
   withdrawalCharge: 18,
   referralLevel1: 21,
   referralLevel2: 3,
@@ -71,9 +98,9 @@ export const SITE = {
   stakeMultipliers: [1.5, 1.8, 2.0, 2.5, 3.0] as number[],
 
   // Lucky Draw
-  luckyDrawSlotCost: 200,     // cost to buy one extra slot
-  luckyDrawFreePerInvestment: 1, // free slots per active investment per day
-  luckyDrawPrizeShares: [0.5, 0.3, 0.2] as number[], // 50/30/20 split for top 3
+  luckyDrawSlotCost: 200,
+  luckyDrawFreePerInvestment: 1,
+  luckyDrawPrizeShares: [0.5, 0.3, 0.2] as number[],
 
   // Lock Vault tiers: { days, bonusPercent, earlyPenaltyPercent }
   vaultTiers: [
@@ -88,8 +115,8 @@ export const SITE = {
     stakeAndSpin: true,
     luckyDraw: true,
     lockVault: true,
-    flashMissions: false,   // scaffold only — off by default
-    referralRace: false,    // scaffold only — off by default
+    flashMissions: false,
+    referralRace: false,
   },
 }
 

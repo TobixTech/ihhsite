@@ -8,10 +8,36 @@ import { accrueIncomeForUser } from "@/lib/income-engine"
 import { and, count, desc, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
+/** Count how many non-cancelled purchases a user has made for a given plan. */
+async function countUserPlanPurchases(userId: string, planId: number): Promise<number> {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(investment)
+    .where(
+      and(
+        eq(investment.userId, userId),
+        eq(investment.planId, planId),
+        sql`${investment.status} NOT IN ('cancelled', 'deleted')`
+      )
+    )
+  return value
+}
+
 export async function buyPlan(planId: number, opts?: { autoReinvest?: boolean }) {
   const userId = await getUserId()
   const plan = PLANS.find((p) => p.id === planId)
   if (!plan) return { ok: false, message: "Plan not found" }
+
+  // Guard: coming soon plans cannot be purchased
+  if (plan.comingSoon) return { ok: false, message: "This package is coming soon." }
+
+  // Guard: per-plan purchase cap
+  if (plan.maxPurchases) {
+    const purchaseCount = await countUserPlanPurchases(userId, planId)
+    if (purchaseCount >= plan.maxPurchases) {
+      return { ok: false, message: `You can only buy this package ${plan.maxPurchases} times.` }
+    }
+  }
 
   // Check slot availability
   const [slot] = await db.select().from(planSlot).where(eq(planSlot.planId, planId))

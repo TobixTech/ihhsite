@@ -20,17 +20,17 @@ const spaceGrotesk = Space_Grotesk({
 const SITE_URL = 'https://conltd.site'
 
 export const metadata: Metadata = {
-  title: 'C.I.Limited — Construction Investment',
+  title: 'Crox Exchange — Trade · Earn · Grow',
   description:
-    'C.I.Limited (C.I.L) — Build your wealth through construction investment. Daily returns, transparent projects, real growth.',
+    'Crox Exchange — Earn consistent daily returns through our structured investment packages. Start with as little as ₦1,000.',
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: 'C.I.Limited — Construction Investment',
-    description: 'Build your wealth through construction investment with C.I.L.',
-    siteName: 'C.I.Limited',
+    title: 'Crox Exchange — Trade · Earn · Grow',
+    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 7-day cycles, instant withdrawals.',
+    siteName: 'Crox Exchange',
     url: SITE_URL,
     type: 'website',
     images: [
@@ -38,21 +38,21 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'C.I.Limited — Construction Investment',
+        alt: 'Crox Exchange — Trade · Earn · Grow',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'C.I.Limited — Construction Investment',
-    description: 'Build your wealth through construction investment with C.I.L.',
+    title: 'Crox Exchange — Trade · Earn · Grow',
+    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 7-day cycles, instant withdrawals.',
     images: ['/og.png'],
   },
   // app/icon.png and app/apple-icon.png are auto-served by Next.js file convention
 }
 
 export const viewport: Viewport = {
-  themeColor: '#141618',
+  themeColor: '#0b0d18',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -109,7 +109,7 @@ export default async function RootLayout({
         {/* Blocking script: apply stored theme class before first paint to avoid flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('cil-theme')||'light';document.documentElement.classList.add(t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('cil-theme')||'dark';document.documentElement.classList.add(t);}catch(e){}})();`,
           }}
         />
         <ThemeProvider>

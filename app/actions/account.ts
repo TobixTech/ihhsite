@@ -8,7 +8,6 @@ import {
   transaction,
   dailySignin,
   investment,
-  user as userTable,
   promoterCode,
 } from "@/lib/db/schema"
 import { SITE } from "@/lib/plans"
@@ -114,9 +113,10 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     role: isOwner ? "admin" : "user",
   })
 
-  // Also stamp role on the better-auth user table for session consistency
+  // Stamp role on the better-auth "user" table using raw SQL because
+  // the Drizzle schema for that table may not expose the role column.
   if (isOwner) {
-    await db.update(userTable).set({ role: "admin" }).where(eq(userTable.id, userId))
+    await db.execute(sql`UPDATE "user" SET role = 'admin' WHERE id = ${userId}`)
   }
 
   // increment the promoter code's signup counter (even if cap was already hit

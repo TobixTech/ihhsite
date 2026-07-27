@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth"
+import { dbReady } from "@/lib/db"
 import { toNextJsHandler } from "better-auth/next-js"
 
 const handler = toNextJsHandler(auth.handler)
 
 export async function GET(req: Request) {
+  await dbReady
   try {
     return await handler.GET(req)
   } catch (e) {
@@ -13,6 +15,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  await dbReady
   try {
     return await handler.POST(req)
   } catch (e) {

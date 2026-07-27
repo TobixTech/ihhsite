@@ -39,8 +39,8 @@ export const PLAN_TIERS: Record<number, { phase: string; label: string; color: s
   20: { phase: 'Elite', label: 'ELT-4', color: 'text-amber-400' },
 }
 
-// All new plans run 7 days. Daily rate = 22% of investment price.
-// Total = daily × 7
+// All new plans run 15 days. Daily rate = 22% of investment price.
+// Total = daily × 15
 export const PLANS: Plan[] = [
   // ── Legacy plans (soldOut) — retained for existing investor records ──
   { id: 1,  name: 'Foundation F-01', price: 3000,   daily: 630,    total: 56700,    durationDays: 90, soldOut: true },
@@ -52,19 +52,19 @@ export const PLANS: Plan[] = [
   { id: 7,  name: 'Framework FW-01', price: 50000,  daily: 10500,  total: 945000,   durationDays: 90, soldOut: true },
   { id: 8,  name: 'Framework FW-02', price: 80000,  daily: 16800,  total: 1512000,  durationDays: 90, soldOut: true },
   { id: 9,  name: 'Framework FW-03', price: 100000, daily: 21000,  total: 1890000,  durationDays: 90, soldOut: true },
-  // ── Active packages (7) ──
-  { id: 10, name: 'Nano',  price: 1000, daily: 220,  total: 1540, durationDays: 7, points: 50,  maxPurchases: 5 },
-  { id: 11, name: 'Micro', price: 1500, daily: 330,  total: 2310, durationDays: 7, points: 75,  maxPurchases: 5 },
-  { id: 12, name: 'Spark', price: 2000, daily: 440,  total: 3080, durationDays: 7, points: 100, maxPurchases: 5 },
-  { id: 13, name: 'Boost', price: 3000, daily: 660,  total: 4620, durationDays: 7, points: 140, maxPurchases: 5 },
-  { id: 14, name: 'Pulse', price: 4000, daily: 880,  total: 6160, durationDays: 7, points: 180, maxPurchases: 5 },
-  { id: 15, name: 'Flow',  price: 5000, daily: 1100, total: 7700, durationDays: 7, points: 220, maxPurchases: 5 },
-  { id: 16, name: 'Core',  price: 7500, daily: 1700, total: 11900, durationDays: 7, points: 300, maxPurchases: 5, popular: true },
-  // ── Coming soon packages (4) ──
-  { id: 17, name: 'Surge', price: 10000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
-  { id: 18, name: 'Prime', price: 15000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
-  { id: 19, name: 'Apex',  price: 20000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
-  { id: 20, name: 'Elite', price: 50000, daily: 0, total: 0, durationDays: 7, comingSoon: true },
+  // ── Active packages (15 days) ──
+  { id: 10, name: 'Nano',  price: 1000, daily: 220,  total: 3300,  durationDays: 15, points: 50,  maxPurchases: 5 },
+  { id: 11, name: 'Micro', price: 1500, daily: 330,  total: 4950,  durationDays: 15, points: 75,  maxPurchases: 5 },
+  { id: 12, name: 'Spark', price: 2000, daily: 440,  total: 6600,  durationDays: 15, points: 100, maxPurchases: 5 },
+  { id: 13, name: 'Boost', price: 3000, daily: 660,  total: 9900,  durationDays: 15, points: 140, maxPurchases: 5 },
+  { id: 14, name: 'Pulse', price: 4000, daily: 880,  total: 13200, durationDays: 15, points: 180, maxPurchases: 5 },
+  { id: 15, name: 'Flow',  price: 5000, daily: 1100, total: 16500, durationDays: 15, points: 220, maxPurchases: 5 },
+  { id: 16, name: 'Core',  price: 7500, daily: 1700, total: 25500, durationDays: 15, points: 300, maxPurchases: 5, popular: true },
+  // ── Coming soon packages ──
+  { id: 17, name: 'Surge', price: 10000, daily: 0, total: 0, durationDays: 15, comingSoon: true },
+  { id: 18, name: 'Prime', price: 15000, daily: 0, total: 0, durationDays: 15, comingSoon: true },
+  { id: 19, name: 'Apex',  price: 20000, daily: 0, total: 0, durationDays: 15, comingSoon: true },
+  { id: 20, name: 'Elite', price: 50000, daily: 0, total: 0, durationDays: 15, comingSoon: true },
 ]
 
 export const SITE = {

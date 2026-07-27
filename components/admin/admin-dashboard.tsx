@@ -772,28 +772,6 @@ function Overview({ stats, controls, onAction, planSlots }: { stats: Stats; cont
           Pausing hides the action from users entirely and blocks new requests.
         </p>
         <div className="mt-3 flex flex-col gap-2">
-        {/* Site Freeze — single button that locks everything for non-admin users */}
-        <button
-          onClick={toggleFreeze}
-          disabled={savingFreeze}
-          className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
-            siteFrozen
-              ? "border-red-500/60 bg-red-500/15 text-red-400"
-              : "border-border bg-card text-muted-foreground"
-          }`}
-        >
-          <span>Freeze Entire Site</span>
-          <span className="flex items-center gap-1.5">
-            {savingFreeze ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : siteFrozen ? (
-              <><Lock className="h-4 w-4" /> Frozen</>
-            ) : (
-              <><Unlock className="h-4 w-4" /> Live</>
-            )}
-          </span>
-        </button>
-
         <button
           onClick={toggleDeposits}
           disabled={savingDep}

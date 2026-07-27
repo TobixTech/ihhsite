@@ -100,6 +100,10 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     }
   }
 
+  // Auto-grant admin role to the platform owner email
+  const ADMIN_EMAILS = ["taddstechnology@gmail.com"]
+  const isOwner = ADMIN_EMAILS.includes((session.user.email ?? "").toLowerCase())
+
   await db.insert(profile).values({
     userId,
     phone: opts.phone ?? null,
@@ -107,7 +111,13 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     referredBy: referrerId,
     isPromoter,
     promoterCommission,
+    role: isOwner ? "admin" : "user",
   })
+
+  // Also stamp role on the better-auth user table for session consistency
+  if (isOwner) {
+    await db.update(userTable).set({ role: "admin" }).where(eq(userTable.id, userId))
+  }
 
   // increment the promoter code's signup counter (even if cap was already hit
   // we only increment when we actually tagged them)

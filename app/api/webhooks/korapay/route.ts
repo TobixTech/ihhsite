@@ -22,7 +22,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { deposit, wallet, transaction } from "@/lib/db/schema"
+import { deposit, transaction } from "@/lib/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { createHmac } from "crypto"
 
@@ -95,20 +95,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, status: "flagged_needs_review" })
   }
 
-  // Auto-approve: credit wallet
+  // Auto-approve: credit wallet (upsert so it works even if wallet row is missing)
   await db
     .update(deposit)
     .set({ status: "success" })
     .where(eq(deposit.reference, reference))
 
-  await db
-    .update(wallet)
-    .set({
-      balance: sql`${wallet.balance} + ${depositAmount}`,
-      totalDeposited: sql`${wallet.totalDeposited} + ${depositAmount}`,
-      updatedAt: new Date(),
-    })
-    .where(eq(wallet.userId, dep.userId))
+  await db.execute(sql`
+    INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
+    VALUES (${dep.userId}, ${depositAmount}, ${depositAmount}, 0, 0, 0, now())
+    ON CONFLICT ("userId") DO UPDATE SET
+      balance          = wallet.balance + ${depositAmount},
+      "totalDeposited" = wallet."totalDeposited" + ${depositAmount},
+      "updatedAt"      = now()
+  `)
 
   await db.insert(transaction).values({
     userId: dep.userId,

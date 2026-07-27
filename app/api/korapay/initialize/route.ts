@@ -24,7 +24,13 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id
-  const userEmail = session.user.email
+  const rawEmail = session.user.email ?? ""
+  // Internal emails like xxx@247incum.user are rejected by Korapay — use a
+  // real-looking fallback so the checkout request always succeeds.
+  const isInternalEmail = rawEmail.endsWith(".user") || rawEmail.endsWith(".internal")
+  const userEmail = isInternalEmail
+    ? `user_${userId.slice(0, 8)}@croxexchange.com`
+    : rawEmail
   const userName = session.user.name ?? "Customer"
 
   let body: { amount: number }

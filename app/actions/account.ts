@@ -8,7 +8,6 @@ import {
   transaction,
   dailySignin,
   investment,
-  user as userTable,
   promoterCode,
 } from "@/lib/db/schema"
 import { SITE } from "@/lib/plans"
@@ -166,9 +165,13 @@ export async function getDashboardData() {
   // accrue any pending daily income first
   await accrueIncomeForUser(userId)
 
-  const [w] = await db.select().from(wallet).where(eq(wallet.userId, userId))
-  const [p] = await db.select().from(profile).where(eq(profile.userId, userId))
-  const [u] = await db.select().from(userTable).where(eq(userTable.id, userId))
+  // Fetch wallet, profile, and user identity (name/email come from the session
+  // since the Better Auth "user" table is not exposed as a Drizzle schema export)
+  const [[w], [p], sessionData] = await Promise.all([
+    db.select().from(wallet).where(eq(wallet.userId, userId)),
+    db.select().from(profile).where(eq(profile.userId, userId)),
+    getSession(),
+  ])
 
   // today's sign-in status
   const since = new Date()
@@ -179,8 +182,8 @@ export async function getDashboardData() {
     .where(and(eq(dailySignin.userId, userId), gte(dailySignin.signedAt, since)))
 
   return {
-    name: u?.name ?? "User",
-    email: u?.email ?? "",
+    name: sessionData?.user?.name ?? "User",
+    email: sessionData?.user?.email ?? "",
     phone: p?.phone ?? "",
     role: p?.role ?? "user",
     isPromoter: p?.isPromoter ?? false,

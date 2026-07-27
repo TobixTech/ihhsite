@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, TrendingUp, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import { Eye, EyeOff, TrendingUp, ArrowDownToLine, ArrowUpFromLine, Wallet } from 'lucide-react'
 import { formatNaira } from '@/lib/plans'
 import { useRouter } from 'next/navigation'
 
@@ -10,53 +10,63 @@ export function BalanceCard({ balance, todayIncome }: { balance: number; todayIn
   const router = useRouter()
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5">
-      {/* Subtle structural grid lines */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, oklch(1 0 0) 0px, oklch(1 0 0) 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, oklch(1 0 0) 0px, oklch(1 0 0) 1px, transparent 1px, transparent 28px)',
-        }}
-      />
-      {/* Cyan glow accent */}
-      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+    <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card">
+      {/* Top electric-blue glow strip */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
 
-      <div className="relative">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/8 blur-3xl" />
+
+      <div className="relative p-5">
+        {/* Header row */}
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-            Available Balance
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
+              <Wallet className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              Available Balance
+            </p>
+          </div>
           <button
             onClick={() => setShow((s) => !s)}
             aria-label={show ? 'Hide balance' : 'Show balance'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary/60 text-muted-foreground transition-all hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface text-muted-foreground transition-colors hover:text-foreground"
           >
             {show ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
           </button>
         </div>
 
-        <p className="mt-2 font-heading text-4xl font-bold tracking-tight tabular-nums text-foreground">
-          {show ? formatNaira(balance) : '₦ ••••••'}
-        </p>
-
-        <div className="mt-1 flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
-            <TrendingUp className="h-3.5 w-3.5" />
-            {show ? `+${formatNaira(todayIncome)}` : '+₦ •••'} today
-          </span>
+        {/* Balance amount */}
+        <div className="mt-3">
+          <p className="text-4xl font-black tabular-nums tracking-tight text-foreground">
+            {show ? formatNaira(balance) : '₦ ••••••'}
+          </p>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="flex items-center gap-1 rounded-full bg-success/12 px-2 py-0.5">
+              <TrendingUp className="h-3 w-3 text-success" />
+              <span className="text-[11px] font-bold text-success">
+                {show ? `+${formatNaira(todayIncome)}` : '+₦ •••'} today
+              </span>
+            </div>
+          </div>
         </div>
 
+        {/* Divider */}
+        <div className="my-4 h-px bg-border/40" />
+
         {/* Action buttons */}
-        <div className="mt-4 flex gap-2.5">
+        <div className="flex gap-2.5">
           <button
             onClick={() => router.push('/topup')}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-primary/20 active:scale-[0.97]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
           >
             <ArrowDownToLine className="h-4 w-4" />
             Deposit
           </button>
           <button
             onClick={() => router.push('/withdraw')}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border/60 bg-secondary/60 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-secondary active:scale-[0.97]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface py-3 text-sm font-bold text-foreground transition-all hover:bg-surface/80 active:scale-[0.97]"
           >
             <ArrowUpFromLine className="h-4 w-4" />
             Withdraw

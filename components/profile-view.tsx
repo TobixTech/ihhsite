@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation"
 import {
   ArrowDownToLine, ArrowUpFromLine, Gift, Users, Wallet,
   Headphones, ChevronRight, LogOut, ListOrdered, ShieldCheck,
-  Loader2, Clock, Copy, CheckCheck,
+  Loader2, Clock, Copy, CheckCheck, TrendingUp, Star,
 } from "lucide-react"
 import { toast } from "sonner"
 import { SITE, formatNaira } from "@/lib/plans"
 import { getTelegramConfig } from "@/app/actions/system-config"
 import type { TelegramConfig } from "@/app/actions/system-config"
 import { authClient } from "@/lib/auth-client"
-import { Logo } from "@/components/logo"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -28,7 +27,7 @@ export function ProfileView(props: Props) {
 
   useEffect(() => { getTelegramConfig().then(setTg) }, [])
 
-  const initials = props.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "CI"
+  const initials = props.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "CX"
 
   const supportLink = tg?.supportUsername
     ? `https://t.me/${tg.supportUsername.replace(/^@/, "")}`
@@ -38,18 +37,18 @@ export function ProfileView(props: Props) {
     {
       title: "Wallet",
       items: [
-        { label: "Deposit",         icon: ArrowDownToLine, href: "/topup",      tint: "text-success",   bg: "bg-success/10"   },
-        { label: "Withdraw",        icon: ArrowUpFromLine, href: "/withdraw",   tint: "text-amber-500", bg: "bg-amber-400/10" },
-        { label: "Transactions",    icon: ListOrdered,     href: "/transactions",tint: "text-primary",  bg: "bg-primary/10"   },
-        { label: "Deposit History", icon: Clock,           href: "/deposits",   tint: "text-muted-foreground", bg: "bg-secondary"  },
+        { label: "Deposit",         icon: ArrowDownToLine, href: "/topup",       tint: "text-primary",          bg: "bg-primary/10"      },
+        { label: "Withdraw",        icon: ArrowUpFromLine, href: "/withdraw",    tint: "text-success",          bg: "bg-success/10"      },
+        { label: "Transactions",    icon: ListOrdered,     href: "/transactions",tint: "text-sky-400",          bg: "bg-sky-400/10"      },
+        { label: "Deposit History", icon: Clock,           href: "/deposits",    tint: "text-muted-foreground", bg: "bg-surface"         },
       ],
     },
     {
       title: "Community",
       items: [
-        { label: "My Team",   icon: Users,      href: "/team",            tint: "text-sky-400",   bg: "bg-sky-400/10"  },
-        { label: "Gift Code", icon: Gift,        href: "/gift-code",      tint: "text-primary",   bg: "bg-primary/10"  },
-        { label: "Support",   icon: Headphones,  href: supportLink,        tint: "text-muted-foreground", bg: "bg-secondary" },
+        { label: "My Team",   icon: Users,      href: "/team",       tint: "text-amber-400",        bg: "bg-amber-400/10" },
+        { label: "Gift Code", icon: Gift,        href: "/gift-code", tint: "text-primary",          bg: "bg-primary/10"  },
+        { label: "Support",   icon: Headphones,  href: supportLink,  tint: "text-muted-foreground", bg: "bg-surface"     },
       ],
     },
     ...(props.role === "admin"
@@ -82,94 +81,93 @@ export function ProfileView(props: Props) {
     }
   }
 
+  const stats = [
+    { label: "Total Earned",    value: formatNaira(props.totalEarned),       icon: TrendingUp,    color: "text-success" },
+    { label: "Referral Income", value: formatNaira(props.referralEarnings),  icon: Users,         color: "text-primary" },
+    { label: "Total Deposited", value: formatNaira(props.totalDeposited),    icon: ArrowDownToLine, color: "text-sky-400" },
+    { label: "Account Level",   value: props.role.charAt(0).toUpperCase() + props.role.slice(1), icon: Star, color: "text-gold" },
+  ]
+
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-5">
-      {/* Header with user info */}
-      <section className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Welcome back</p>
-          <h2 className="text-xl font-bold leading-tight">{props.name}</h2>
-        </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/15 text-sm font-black text-primary">
-          {initials}
-        </div>
-      </section>
+    <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-4">
 
-      {/* Gradient wallet cards */}
-      <section className="space-y-2.5">
-        {/* Active Balance */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 p-5 text-white shadow-md">
-          <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/10 blur-xl" />
-          <p className="relative text-xs font-semibold uppercase tracking-wide opacity-90">Active Balance</p>
-          <p className="relative mt-3 text-3xl font-black tabular-nums">{formatNaira(props.balance)}</p>
-          <p className="relative mt-1 text-xs opacity-80">Available to withdraw</p>
+      {/* Profile header */}
+      <div className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4">
+        {/* Avatar */}
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10">
+          <span className="text-lg font-black text-primary">{initials}</span>
+          {props.role === "admin" && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive">
+              <ShieldCheck className="h-2.5 w-2.5 text-white" />
+            </span>
+          )}
         </div>
+        {/* Info */}
+        <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+          <h2 className="truncate text-base font-bold text-foreground">{props.name}</h2>
+          <p className="truncate text-[11px] text-muted-foreground">{props.email}</p>
+          {props.phone && (
+            <p className="text-[11px] text-muted-foreground">{props.phone}</p>
+          )}
+        </div>
+        {/* Balance pill */}
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Balance</span>
+          <span className="text-sm font-black tabular-nums text-foreground">{formatNaira(props.balance)}</span>
+        </div>
+      </div>
 
-        {/* Frozen Balance */}
-        {props.frozenBalance > 0 && (
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-5 text-white shadow-md">
-            <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/10 blur-xl" />
-            <p className="relative text-xs font-semibold uppercase tracking-wide opacity-90">Frozen Balance</p>
-            <p className="relative mt-3 text-3xl font-black tabular-nums">{formatNaira(props.frozenBalance)}</p>
-            <p className="relative mt-1 text-xs opacity-80">Unlocks after your first investment</p>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {stats.map((s) => (
+          <div key={s.label} className="flex flex-col gap-2 rounded-2xl border border-border/50 bg-card p-3.5">
+            <div className={cn("flex h-7 w-7 items-center justify-center rounded-lg bg-surface")}>
+              <s.icon className={cn("h-3.5 w-3.5", s.color)} />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{s.label}</p>
+              <p className={cn("mt-0.5 text-sm font-black tabular-nums", s.color)}>{s.value}</p>
+            </div>
           </div>
-        )}
-
-        {/* Total Balance */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 to-green-600 p-5 text-white shadow-md">
-          <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/10 blur-xl" />
-          <p className="relative text-xs font-semibold uppercase tracking-wide opacity-90">Total Balance</p>
-          <p className="relative mt-3 text-3xl font-black tabular-nums">{formatNaira(props.balance + props.frozenBalance)}</p>
-          <p className="relative mt-1 text-xs opacity-80">Active + Frozen</p>
-        </div>
-      </section>
-
-      {/* Earnings breakdown */}
-      <section className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-border bg-card/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Earned</p>
-          <p className="mt-3 text-2xl font-black text-success tabular-nums">{formatNaira(props.totalEarned)}</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Referral Income</p>
-          <p className="mt-3 text-2xl font-black text-primary tabular-nums">{formatNaira(props.referralEarnings)}</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Deposited</p>
-          <p className="mt-3 text-2xl font-black text-sky-500 tabular-nums">{formatNaira(props.totalDeposited)}</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account Level</p>
-          <p className="mt-3 text-lg font-bold text-amber-500">{props.role}</p>
-        </div>
-      </section>
+        ))}
+      </div>
 
       {/* Referral code card */}
-      <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your Referral Code</p>
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <div className="mb-2.5 flex items-center justify-between">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Referral Code</p>
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+            {SITE.referralLevel1}% commission
+          </span>
+        </div>
         <button
           onClick={copyInvite}
-          className="mt-3 flex w-full items-center justify-between rounded-xl bg-background/80 px-4 py-3 transition-all hover:bg-background active:scale-95"
+          className="flex w-full items-center justify-between rounded-xl border border-primary/20 bg-background/60 px-4 py-3 transition-all hover:bg-background/80 active:scale-[0.98]"
         >
-          <span className="text-lg font-black text-primary">{props.inviteCode}</span>
-          {copied ? <CheckCheck className="h-5 w-5 text-success" /> : <Copy className="h-5 w-5 text-muted-foreground" />}
+          <span className="font-black tracking-widest text-primary">{props.inviteCode}</span>
+          {copied
+            ? <CheckCheck className="h-4 w-4 text-success" />
+            : <Copy className="h-4 w-4 text-muted-foreground" />
+          }
         </button>
-        <p className="mt-2 text-xs text-muted-foreground">Share to earn 21% on referrals</p>
-      </section>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Share your code and earn {SITE.referralLevel1}% on every referral deposit
+        </p>
+      </div>
 
-      {/* Grouped menu */}
+      {/* Menu groups */}
       {menuGroups.map((group) => (
         <section key={group.title}>
-          <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="mb-1.5 px-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {group.title}
           </p>
-          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
+          <div className="overflow-hidden rounded-2xl border border-border/50 bg-card">
             {group.items.map((item, i) => (
               <button
                 key={item.label}
                 onClick={() => item.href.startsWith("http") ? window.open(item.href, "_blank") : router.push(item.href)}
                 className={cn(
-                  "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-all hover:bg-secondary/50 active:bg-secondary/70",
+                  "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface active:bg-surface/70",
                   i !== group.items.length - 1 && "border-b border-border/40",
                 )}
               >
@@ -188,14 +186,14 @@ export function ProfileView(props: Props) {
       <button
         onClick={handleSignOut}
         disabled={pending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/25 bg-destructive/8 py-3 text-sm font-semibold text-destructive transition-all hover:bg-destructive/15 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/8 py-3.5 text-sm font-bold text-destructive transition-all hover:bg-destructive/15 disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
         Sign Out
       </button>
 
       <p className="pb-2 text-center text-[10px] uppercase tracking-widest text-muted-foreground/40">
-        {SITE.short} &bull; {SITE.tagline}
+        {SITE.name} &bull; {SITE.tagline}
       </p>
     </main>
   )

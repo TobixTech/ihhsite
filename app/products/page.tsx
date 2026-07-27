@@ -5,27 +5,9 @@ import { AppHeader } from '@/components/app-header'
 import { BottomNav } from '@/components/bottom-nav'
 import { PlanCard } from '@/components/plan-card'
 import { PLANS, SITE, formatNaira } from '@/lib/plans'
+import { TrendingUp, Clock, Layers, ShieldCheck } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
-
-// Active plan groups (soldOut plans excluded)
-const ACTIVE_GROUPS = [
-  {
-    phase: 'Starter',
-    ids: [10, 11, 12],
-    desc: 'Entry-level packages. Low capital, 7-day daily earning cycles.',
-  },
-  {
-    phase: 'Growth',
-    ids: [13, 14, 15],
-    desc: 'Mid-tier packages with stronger daily returns and higher earning potential.',
-  },
-  {
-    phase: 'Core',
-    ids: [16],
-    desc: 'Our flagship package. Maximum returns for serious investors.',
-  },
-]
 
 export default async function ProductsPage() {
   const session = await getSession()
@@ -33,81 +15,76 @@ export default async function ProductsPage() {
 
   const planSlots = await getPublicPlanSlots()
 
-  // Only active (non-soldOut, non-comingSoon) plans for the rate sheet
   const activePlans = PLANS.filter((p) => !p.soldOut && !p.comingSoon)
   const comingSoonPlans = PLANS.filter((p) => p.comingSoon)
 
+  // Min / max daily among active plans
+  const minDaily = Math.min(...activePlans.map((p) => p.daily))
+  const maxDaily = Math.max(...activePlans.map((p) => p.daily))
+
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-28">
       <AppHeader title="Packages" />
 
-      <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-5">
-        {/* Intro banner */}
-        <section className="overflow-hidden rounded-2xl border border-primary/20 bg-card">
-          <div className="flex items-center justify-between gap-4 border-b border-border/60 bg-primary/5 px-4 py-3">
-            <div>
-              <h2 className="text-sm font-bold text-foreground">{SITE.name} Packages</h2>
-              <p className="text-[11px] text-muted-foreground">
-                {SITE.packageCount} packages · {activePlans.length} active · {comingSoonPlans.length} coming soon
-              </p>
-            </div>
-            <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-success">
-              7-day cycle
-            </span>
-          </div>
+      <main className="mx-auto max-w-md px-4 py-4">
 
-          {/* Rate sheet — active plans only */}
-          <div className="grid grid-cols-4 border-b border-border/60 bg-secondary/30 text-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {["Plan", "Capital", "Daily", "Total"].map((h) => (
-              <div key={h} className="py-2.5">{h}</div>
+        {/* Stats header */}
+        <div className="mb-5 grid grid-cols-2 gap-2.5">
+          <StatCard
+            icon={Layers}
+            label="Active Packages"
+            value={`${activePlans.length} plans`}
+            sub="7-day cycle"
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="Daily Earnings"
+            value={`${formatNaira(minDaily)} – ${formatNaira(maxDaily)}`}
+            sub="per package"
+            accent
+          />
+          <StatCard
+            icon={ShieldCheck}
+            label="Min. Capital"
+            value={formatNaira(SITE.minDeposit)}
+            sub="to start investing"
+          />
+          <StatCard
+            icon={Clock}
+            label="Coming Soon"
+            value={`${comingSoonPlans.length} packages`}
+            sub="releasing soon"
+          />
+        </div>
+
+        {/* Active plans — full list */}
+        <section className="mb-6">
+          <SectionHeader
+            title="Active Packages"
+            count={activePlans.length}
+            badge="Live"
+            badgeColor="bg-success/15 text-success border-success/25"
+          />
+          <div className="flex flex-col gap-2.5">
+            {activePlans.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} slot={planSlots.find((s) => s.planId === plan.id)} />
             ))}
           </div>
-          {activePlans.map((plan, i) => (
-            <div
-              key={plan.id}
-              className={`grid grid-cols-4 text-center text-xs tabular-nums ${
-                i % 2 === 0 ? 'bg-card' : 'bg-secondary/20'
-              } ${i !== activePlans.length - 1 ? 'border-b border-border/40' : ''}`}
-            >
-              <div className="px-2 py-2.5 text-left text-[10px] font-semibold text-primary">{plan.name}</div>
-              <div className="px-1 py-2.5 text-[11px]">{formatNaira(plan.price)}</div>
-              <div className="px-1 py-2.5 text-[11px] font-semibold text-success">{formatNaira(plan.daily)}</div>
-              <div className="px-1 py-2.5 text-[11px]">{formatNaira(plan.total)}</div>
-            </div>
-          ))}
         </section>
 
-        {/* Active plan groups */}
-        {ACTIVE_GROUPS.map((group) => {
-          const plans = PLANS.filter((p) => group.ids.includes(p.id))
-          return (
-            <section key={group.phase}>
-              <div className="mb-3">
-                <h2 className="text-base font-bold">{group.phase} Tier</h2>
-                <p className="text-[11px] text-muted-foreground">{group.desc}</p>
-              </div>
-              <div className="flex flex-col gap-3">
-                {plans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} slot={planSlots.find((s) => s.planId === plan.id)} />
-                ))}
-              </div>
-            </section>
-          )
-        })}
-
-        {/* Coming Soon section */}
+        {/* Coming soon */}
         {comingSoonPlans.length > 0 && (
-          <section>
-            <div className="mb-3 flex items-center gap-2">
-              <h2 className="text-base font-bold">Coming Soon</h2>
-              <span className="rounded-full border border-blue-500/30 bg-blue-950/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-400">
-                {comingSoonPlans.length} packages
-              </span>
-            </div>
+          <section className="mb-4">
+            <SectionHeader
+              title="Coming Soon"
+              count={comingSoonPlans.length}
+              badge="Soon"
+              badgeColor="bg-primary/15 text-primary border-primary/25"
+            />
             <p className="mb-3 text-[11px] text-muted-foreground">
-              Premium packages launching soon. Keep an eye out for notifications.
+              Premium packages launching shortly. Watch out for announcements.
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               {comingSoonPlans.map((plan) => (
                 <PlanCard key={plan.id} plan={plan} slot={planSlots.find((s) => s.planId === plan.id)} />
               ))}
@@ -115,12 +92,59 @@ export default async function ProductsPage() {
           </section>
         )}
 
-        <p className="px-1 text-center text-xs text-muted-foreground">
-          Min. deposit {formatNaira(SITE.minDeposit)} · Returns credited every 24 hours · Up to 5 purchases per package
-        </p>
+        {/* Footer note */}
+        <div className="rounded-2xl border border-border/40 bg-card/50 px-4 py-3 text-center">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Each package runs for <span className="font-semibold text-foreground">7 days</span> with daily payouts.
+            Max <span className="font-semibold text-foreground">5 purchases</span> per package.
+            Min. deposit {formatNaira(SITE.minDeposit)}.
+          </p>
+        </div>
       </main>
 
       <BottomNav />
+    </div>
+  )
+}
+
+function StatCard({
+  icon: Icon, label, value, sub, accent,
+}: {
+  icon: React.ElementType
+  label: string
+  value: string
+  sub: string
+  accent?: boolean
+}) {
+  return (
+    <div className={`flex flex-col gap-2 rounded-2xl border p-4 ${accent ? 'border-primary/20 bg-primary/5' : 'border-border/50 bg-card'}`}>
+      <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${accent ? 'bg-primary/15' : 'bg-surface'}`}>
+        <Icon className={`h-4 w-4 ${accent ? 'text-primary' : 'text-muted-foreground'}`} />
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className={`mt-0.5 text-sm font-black tabular-nums ${accent ? 'text-primary' : 'text-foreground'}`}>{value}</p>
+        <p className="text-[10px] text-muted-foreground">{sub}</p>
+      </div>
+    </div>
+  )
+}
+
+function SectionHeader({ title, count, badge, badgeColor }: {
+  title: string
+  count: number
+  badge: string
+  badgeColor: string
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-sm font-bold tracking-tight text-foreground">{title}</h2>
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-muted-foreground">{count} packages</span>
+        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${badgeColor}`}>
+          {badge}
+        </span>
+      </div>
     </div>
   )
 }

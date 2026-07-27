@@ -8,6 +8,7 @@ import {
   transaction,
   dailySignin,
   investment,
+  user as userTable,
   promoterCode,
 } from "@/lib/db/schema"
 import { SITE } from "@/lib/plans"

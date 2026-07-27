@@ -6,8 +6,8 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 export const db = drizzle(pool, { schema })
 
 // Lazy schema migrations — idempotent DDL that runs on every cold start.
-// Tables are created before column additions so the ALTER TABLE never races.
-pool.query(`
+// Stored as a promise so callers can await it before issuing queries.
+export const dbReady: Promise<void> = pool.query(`
   CREATE TABLE IF NOT EXISTS site_setting (
     key       text PRIMARY KEY,
     value     text NOT NULL,
@@ -125,4 +125,4 @@ pool.query(`
   ALTER TABLE deposit ADD COLUMN IF NOT EXISTS "sabussRef" text;
   ALTER TABLE deposit ADD COLUMN IF NOT EXISTS "provider" text NOT NULL DEFAULT 'bank_transfer';
   ALTER TABLE daily_signin ALTER COLUMN amount SET DEFAULT 50;
-`).catch(() => { /* safe to ignore — tables/columns already exist or DB not connected yet */ })
+`).then(() => {}).catch(() => { /* safe to ignore — tables/columns already exist or DB not connected yet */ })

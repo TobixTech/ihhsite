@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { deposit, wallet, transaction, user as userTable, bankAccount } from "@/lib/db/schema"
+import { deposit, wallet, transaction, bankAccount } from "@/lib/db/schema"
 import { SITE } from "@/lib/plans"
 import { getUserId } from "@/lib/session"
 import { eq, sql, desc, and } from "drizzle-orm"
@@ -93,15 +93,15 @@ export async function approveDeposit(reference: string) {
   const amount = Number(dep.amount)
   await db.update(deposit).set({ status: "success" }).where(eq(deposit.reference, reference))
 
-  // credit wallet
-  await db
-    .update(wallet)
-    .set({
-      balance: sql`${wallet.balance} + ${amount}`,
-      totalDeposited: sql`${wallet.totalDeposited} + ${amount}`,
-      updatedAt: new Date(),
-    })
-    .where(eq(wallet.userId, dep.userId))
+  // Upsert wallet — creates it if missing, credits it if it exists
+  await db.execute(sql`
+    INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
+    VALUES (${dep.userId}, ${amount}, ${amount}, 0, 0, 0, now())
+    ON CONFLICT ("userId") DO UPDATE SET
+      balance        = wallet.balance + ${amount},
+      "totalDeposited" = wallet."totalDeposited" + ${amount},
+      "updatedAt"    = now()
+  `)
 
   await db.insert(transaction).values({
     userId: dep.userId,
@@ -217,28 +217,20 @@ export async function markDepositAsPaid(reference: string) {
     .set({ status: "processing" })
     .where(eq(deposit.reference, reference))
 
-  // Auto-approve for whitelisted emails: fire-and-forget
-  const [userRow] = await db.select().from(userTable).where(eq(userTable.id, userId))
-  console.log("[v0] User email:", userRow?.email, "Auto-approve list:", AUTO_APPROVE_EMAILS)
-  
-  if (userRow && AUTO_APPROVE_EMAILS.includes(userRow.email.toLowerCase())) {
+  // Auto-approve for whitelisted emails: use raw SQL to avoid broken userTable import
+  const [userRow] = await db.execute<{ email: string }>(
+    sql`SELECT email FROM "user" WHERE id = ${userId} LIMIT 1`
+  )
+  const email = (userRow as unknown as { email: string })?.email ?? ""
+
+  if (email && AUTO_APPROVE_EMAILS.includes(email.toLowerCase())) {
     const secret = process.env.AUTO_APPROVE_SECRET ?? "cil_auto_approve_internal_secret"
     const url = `${baseUrl()}/api/auto-approve-deposit`
-    console.log("[v0] Triggering auto-approve for:", userRow.email, "at URL:", url)
-    
     fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reference, email: userRow.email, secret }),
-    })
-      .then((res) => {
-        console.log("[v0] Auto-approve fetch response status:", res.status)
-        return res.json()
-      })
-      .then((data) => console.log("[v0] Auto-approve response:", data))
-      .catch((err) => console.error("[v0] Auto-approve request failed:", err))
-  } else {
-    console.log("[v0] Email not in auto-approve list")
+      body: JSON.stringify({ reference, email, secret }),
+    }).catch((err) => console.error("[v0] Auto-approve request failed:", err))
   }
   
   return { ok: true, message: "Payment marked as complete. Processing..." }

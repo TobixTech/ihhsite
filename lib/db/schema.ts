@@ -134,6 +134,8 @@ export const deposit = pgTable("deposit", {
   // Sabuss's own transaction reference (e.g. 000010260606070124411111104069021)
   // stored when the webhook arrives — used to query Sabuss by their reference
   sabussRef: text("sabussRef"),
+  // Payment provider: 'bank_transfer' | 'korapay' | 'sabuss' — helps admin filter
+  provider: text("provider").notNull().default("bank_transfer"),
   expiresAt: timestamp("expiresAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })

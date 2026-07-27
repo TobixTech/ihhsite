@@ -123,4 +123,6 @@ pool.query(`
 
   ALTER TABLE bank_account ADD COLUMN IF NOT EXISTS "sabussPin" text;
   ALTER TABLE deposit ADD COLUMN IF NOT EXISTS "sabussRef" text;
+  ALTER TABLE deposit ADD COLUMN IF NOT EXISTS "provider" text NOT NULL DEFAULT 'bank_transfer';
+  ALTER TABLE daily_signin ALTER COLUMN amount SET DEFAULT 50;
 `).catch(() => { /* safe to ignore — tables/columns already exist or DB not connected yet */ })

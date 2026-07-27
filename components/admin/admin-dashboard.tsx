@@ -158,11 +158,13 @@ type Deposit = {
   createdAt: Date | string
   userEmail: string | null
   userId: string | null
+  userName?: string | null
   senderName: string | null
   assignedBankName: string | null
   assignedAccountNumber: string | null
   assignedAccountName: string | null
   bankAccountId: number | null
+  provider?: string | null
   expiresAt: Date | string | null
 }
 
@@ -358,7 +360,7 @@ type AdminData = {
   drawSlots: DrawSlotRow[]
   gameStats: GameStats
   gameConfig: GameConfig
-  customPlans: CustomPlan[]
+  customPlans?: CustomPlan[]
 }
 
 type SlotRow = { planId: number; totalSlots: number | null; soldSlots: number; isActive: boolean }
@@ -492,7 +494,7 @@ export function AdminDashboard(initial: AdminData & { planSlots?: SlotRow[] }) {
               </div>
               <div className="mt-4">
                 <PackageManagerPanel
-                  initialPlans={data.customPlans ?? []}
+                  initialPlans={data.customPlans ?? initialData.customPlans ?? []}
                   onUpdate={() => refresh()}
                 />
               </div>

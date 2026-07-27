@@ -268,24 +268,68 @@ export async function adjustBalance(userId: string, amount: number, note: string
   await requireAdmin()
   const amt = Number(amount)
   if (!amt) return { ok: false, message: "Enter a non-zero amount" }
-  
-  // Only update totalEarned for positive adjustments (credits)
-  const updates = amt > 0
-    ? { balance: sql`${wallet.balance} + ${amt}`, totalEarned: sql`${wallet.totalEarned} + ${amt}`, updatedAt: new Date() }
-    : { balance: sql`${wallet.balance} + ${amt}`, updatedAt: new Date() }
-  
-  await db
-    .update(wallet)
-    .set(updates)
-    .where(eq(wallet.userId, userId))
+
+  // Upsert wallet so it works even if no wallet row exists yet
+  if (amt > 0) {
+    await db.execute(sql`
+      INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
+      VALUES (${userId}, ${amt}, 0, 0, ${amt}, 0, now())
+      ON CONFLICT ("userId") DO UPDATE SET
+        balance      = wallet.balance + ${amt},
+        "totalEarned" = wallet."totalEarned" + ${amt},
+        "updatedAt"  = now()
+    `)
+  } else {
+    await db.execute(sql`
+      INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
+      VALUES (${userId}, ${amt}, 0, 0, 0, 0, now())
+      ON CONFLICT ("userId") DO UPDATE SET
+        balance     = wallet.balance + ${amt},
+        "updatedAt" = now()
+    `)
+  }
+
   await db.insert(transaction).values({
     userId,
     type: amt > 0 ? "credit" : "debit",
     amount: String(Math.abs(amt)),
     description: note || "Admin balance adjustment",
+    status: "completed",
   })
   revalidatePath("/admin")
-  return { ok: true, message: "Balance adjusted" }
+  return { ok: true, message: `Balance ${amt > 0 ? "credited" : "debited"} ₦${Math.abs(amt).toLocaleString()}` }
+}
+
+/** Force-credit a deposit that is already marked SUCCESS but whose wallet was never credited.
+ *  This handles the edge case where Korapay marked it success before the wallet upsert fix. */
+export async function recreditDeposit(reference: string) {
+  await requireAdmin()
+  const [dep] = await db.select().from(deposit).where(eq(deposit.reference, reference))
+  if (!dep) return { ok: false, message: "Deposit not found" }
+  if (dep.status !== "success") return { ok: false, message: "Deposit is not in SUCCESS state" }
+
+  const amount = Number(dep.amount)
+
+  await db.execute(sql`
+    INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
+    VALUES (${dep.userId}, ${amount}, ${amount}, 0, 0, 0, now())
+    ON CONFLICT ("userId") DO UPDATE SET
+      balance          = wallet.balance + ${amount},
+      "totalDeposited" = wallet."totalDeposited" + ${amount},
+      "updatedAt"      = now()
+  `)
+
+  await db.insert(transaction).values({
+    userId: dep.userId,
+    type: "deposit",
+    amount: String(amount),
+    status: "completed",
+    reference,
+    description: `Deposit re-credited: ₦${amount.toLocaleString()} (manual fix)`,
+  })
+
+  revalidatePath("/admin")
+  return { ok: true, message: `₦${amount.toLocaleString()} re-credited to wallet` }
 }
 
 export async function createGiftCode(data: { code: string; amount: number; maxUses: number }) {
@@ -1342,7 +1386,7 @@ export async function getAdminData() {
   return { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig, customPlans }
 }
 
-// ── Sabuss Deposit Check (Admin) ──────────────────────────────────────────────
+// ── Sabuss Deposit Check (Admin) ────────────────────────────────��─────────────
 
 /**
  * Admin-facing Sabuss check — queries the Sabuss API for the deposit's account

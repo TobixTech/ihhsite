@@ -83,6 +83,7 @@ import {
   testSabussWebhook,
   adminCheckDeposit,
   adminDeleteTransaction,
+  recreditDeposit,
 } from "@/app/actions/admin"
 import { approveDeposit, rejectDeposit } from "@/app/actions/deposit"
 import { PlanSlotsPanel } from "@/components/admin/plan-slots-panel"
@@ -1554,6 +1555,16 @@ function DepositCard({
     })
   }
 
+  function handleRecredit() {
+    if (!confirm(`Re-credit ₦${Number(dep.amount).toLocaleString()} to this user's wallet? Only do this if the deposit is SUCCESS but wallet was not credited.`)) return
+    startActTransition(async () => {
+      const res = await recreditDeposit(dep.reference)
+      if (res.ok) toast.success(res.message)
+      else toast.error(res.message)
+      onAction()
+    })
+  }
+
   async function handleCheck() {
     setChecking(true)
     setCheckResult(null)
@@ -1623,7 +1634,18 @@ function DepositCard({
             </button>
           </div>
         )}
-        {/* Check Sabuss button ��� shown for both pending AND completed deposits */}
+        {/* Re-credit Wallet — for SUCCESS deposits whose wallet was not credited */}
+        {isCompleted && (
+          <button
+            onClick={handleRecredit}
+            disabled={actPending}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 py-2 text-xs font-bold text-primary hover:bg-primary/20 disabled:opacity-60"
+          >
+            {actPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wallet className="h-3.5 w-3.5" />}
+            Re-credit Wallet
+          </button>
+        )}
+        {/* Check Sabuss button — shown for both pending AND completed deposits */}
         <button
           onClick={handleCheck}
           disabled={checking}

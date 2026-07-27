@@ -3,9 +3,15 @@ import { siteSetting, bankAccount } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { SITE } from "@/lib/plans"
 
-/** Returns true if a Postgres error is "table does not exist" (code 42P01). */
+/** Returns true if an error (or its cause chain) is a Postgres "table does not exist" (42P01). */
 function isTableMissingError(err: unknown): boolean {
-  return typeof err === "object" && err !== null && (err as { code?: string }).code === "42P01"
+  if (typeof err !== "object" || err === null) return false
+  const e = err as { code?: string; cause?: unknown; message?: string }
+  if (e.code === "42P01") return true
+  if (typeof e.message === "string" && e.message.includes("does not exist")) return true
+  // Drizzle/Neon wraps the original PG error in `cause`
+  if (e.cause) return isTableMissingError(e.cause)
+  return false
 }
 
 export const SETTING_KEYS = {
@@ -27,15 +33,15 @@ export const SETTING_KEYS = {
   vaultMin: "game_vault_min",                     // naira e.g. "1000"
 } as const
 
-/** Reads a single setting value, returns null if missing or table not yet created. */
+/** Reads a single setting value, returns null if missing, table not yet created, or any DB error. */
 export async function getSetting(key: string): Promise<string | null> {
   try {
     await dbReady
     const [row] = await db.select().from(siteSetting).where(eq(siteSetting.key, key))
     return row?.value ?? null
-  } catch (err) {
-    if (isTableMissingError(err)) return null
-    throw err
+  } catch {
+    // Settings are non-critical — always fall back to null / SITE defaults
+    return null
   }
 }
 
@@ -62,8 +68,8 @@ export async function getGameConfig() {
   let rows: { key: string; value: string }[] = []
   try {
     rows = await db.select().from(siteSetting)
-  } catch (err) {
-    if (!isTableMissingError(err)) throw err
+  } catch {
+    // Fall back to SITE defaults if DB is unavailable
   }
   const map = new Map(rows.map((r) => [r.key, r.value]))
 
@@ -114,8 +120,8 @@ export async function getPauseFlags(): Promise<{ depositsPaused: boolean; withdr
   let rows: { key: string; value: string }[] = []
   try {
     rows = await db.select().from(siteSetting)
-  } catch (err) {
-    if (!isTableMissingError(err)) throw err
+  } catch {
+    // Fall back to all-false defaults if DB is unavailable
   }
   const map = new Map(rows.map((r) => [r.key, r.value]))
   return {

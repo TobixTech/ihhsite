@@ -20,6 +20,7 @@ import {
   stakeSpin,
   lockVault,
   planSlot,
+  customPlan,
 } from "@/lib/db/schema"
 import { requireAdmin } from "@/lib/session"
 import { accrueIncomeForAll, backfillReinvestForUser } from "@/lib/income-engine"
@@ -1316,7 +1317,7 @@ export async function getGameStats() {
 // Used by the live-polling client so it only needs one round-trip.
 export async function getAdminData() {
   await requireAdmin()
-  const [stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig] =
+  const [stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig, customPlans] =
     await Promise.all([
       getAdminStats(),
       getPendingWithdrawals(),
@@ -1336,8 +1337,9 @@ export async function getAdminData() {
       getAllDrawSlots(),
       getGameStats(),
       getGameConfig(),
+      getCustomPlans(),
     ])
-  return { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig }
+  return { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig, customPlans }
 }
 
 // ── Sabuss Deposit Check (Admin) ──────────────────────────────────────────────
@@ -1500,4 +1502,123 @@ export async function testSabussWebhook(accountId: number) {
     const msg = err instanceof Error ? err.message : String(err)
     return { ok: false, message: `Could not reach webhook: ${msg}` }
   }
+}
+
+// ── Admin: Custom Package Manager ─────────────────────────────────────────────
+
+export type CustomPlanInput = {
+  name: string
+  price: number
+  daily: number
+  durationDays: number
+  points: number
+  maxPurchases: number | null
+  comingSoon: boolean
+  sortOrder: number
+}
+
+/** Fetch all admin-created plans */
+export async function getCustomPlans() {
+  await requireAdmin()
+  return db.select().from(customPlan).orderBy(asc(customPlan.sortOrder), asc(customPlan.id))
+}
+
+/** Create a new custom plan */
+export async function createCustomPlan(input: CustomPlanInput) {
+  await requireAdmin()
+  if (!input.name.trim()) return { ok: false, message: "Name is required" }
+  if (input.price <= 0 || input.daily <= 0) return { ok: false, message: "Price and daily must be positive" }
+
+  await db.insert(customPlan).values({
+    name: input.name.trim(),
+    price: String(input.price),
+    daily: String(input.daily),
+    durationDays: input.durationDays,
+    points: input.points,
+    maxPurchases: input.maxPurchases,
+    isActive: !input.comingSoon,
+    comingSoon: input.comingSoon,
+    sortOrder: input.sortOrder,
+  })
+
+  revalidatePath("/products")
+  revalidatePath("/admin")
+  return { ok: true, message: "Package created" }
+}
+
+/** Update an existing custom plan */
+export async function updateCustomPlan(id: number, input: CustomPlanInput) {
+  await requireAdmin()
+  if (!input.name.trim()) return { ok: false, message: "Name is required" }
+  if (input.price <= 0 || input.daily <= 0) return { ok: false, message: "Price and daily must be positive" }
+
+  await db.update(customPlan).set({
+    name: input.name.trim(),
+    price: String(input.price),
+    daily: String(input.daily),
+    durationDays: input.durationDays,
+    points: input.points,
+    maxPurchases: input.maxPurchases,
+    isActive: !input.comingSoon,
+    comingSoon: input.comingSoon,
+    sortOrder: input.sortOrder,
+    updatedAt: new Date(),
+  }).where(eq(customPlan.id, id))
+
+  revalidatePath("/products")
+  revalidatePath("/admin")
+  return { ok: true, message: "Package updated" }
+}
+
+/** Toggle isActive (enable/disable) for a custom plan */
+export async function toggleCustomPlan(id: number) {
+  await requireAdmin()
+  const [existing] = await db.select().from(customPlan).where(eq(customPlan.id, id))
+  if (!existing) return { ok: false, message: "Package not found" }
+
+  const nextActive = !existing.isActive
+  await db.update(customPlan).set({
+    isActive: nextActive,
+    comingSoon: nextActive ? false : existing.comingSoon,
+    updatedAt: new Date(),
+  }).where(eq(customPlan.id, id))
+
+  revalidatePath("/products")
+  revalidatePath("/admin")
+  return { ok: true, message: nextActive ? "Package activated" : "Package deactivated" }
+}
+
+/** Release a coming-soon plan to active immediately */
+export async function releasePlan(id: number) {
+  await requireAdmin()
+  const [existing] = await db.select().from(customPlan).where(eq(customPlan.id, id))
+  if (!existing) return { ok: false, message: "Package not found" }
+
+  await db.update(customPlan).set({
+    isActive: true,
+    comingSoon: false,
+    updatedAt: new Date(),
+  }).where(eq(customPlan.id, id))
+
+  revalidatePath("/products")
+  revalidatePath("/admin")
+  return { ok: true, message: "Package released and is now active" }
+}
+
+/** Delete a custom plan (only if no active investments reference it) */
+export async function deleteCustomPlan(id: number) {
+  await requireAdmin()
+  // Offset custom plan IDs start at 100 in id space
+  const planIdInUse = await db
+    .select({ c: sql<number>`count(*)` })
+    .from(investment)
+    .where(and(eq(investment.planId, id + 100), sql`${investment.status} NOT IN ('cancelled', 'deleted', 'completed')`))
+  if (Number(planIdInUse[0].c) > 0) {
+    return { ok: false, message: "Cannot delete — there are active investments on this package" }
+  }
+
+  await db.delete(customPlan).where(eq(customPlan.id, id))
+  revalidatePath("/products")
+  revalidatePath("/admin")
+  return { ok: true, message: "Package deleted" }
 }

@@ -1,7 +1,18 @@
-import { db } from "@/lib/db"
+import { db, dbReady } from "@/lib/db"
 import { siteSetting, bankAccount } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { SITE } from "@/lib/plans"
+
+/** Returns true if an error (or its cause chain) is a Postgres "table does not exist" (42P01). */
+function isTableMissingError(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false
+  const e = err as { code?: string; cause?: unknown; message?: string }
+  if (e.code === "42P01") return true
+  if (typeof e.message === "string" && e.message.includes("does not exist")) return true
+  // Drizzle/Neon wraps the original PG error in `cause`
+  if (e.cause) return isTableMissingError(e.cause)
+  return false
+}
 
 export const SETTING_KEYS = {
   siteFrozen: "site_frozen",               // "true" = entire site frozen for all non-admin users
@@ -22,10 +33,16 @@ export const SETTING_KEYS = {
   vaultMin: "game_vault_min",                     // naira e.g. "1000"
 } as const
 
-/** Reads a single setting value, returns null if missing. */
+/** Reads a single setting value, returns null if missing, table not yet created, or any DB error. */
 export async function getSetting(key: string): Promise<string | null> {
-  const [row] = await db.select().from(siteSetting).where(eq(siteSetting.key, key))
-  return row?.value ?? null
+  try {
+    await dbReady
+    const [row] = await db.select().from(siteSetting).where(eq(siteSetting.key, key))
+    return row?.value ?? null
+  } catch {
+    // Settings are non-critical — always fall back to null / SITE defaults
+    return null
+  }
 }
 
 /** Reads a boolean setting (defaults to false if unset). */
@@ -47,7 +64,13 @@ export async function setSetting(key: string, value: string): Promise<void> {
  * Called by game server actions so config changes take effect immediately.
  */
 export async function getGameConfig() {
-  const rows = await db.select().from(siteSetting)
+  await dbReady
+  let rows: { key: string; value: string }[] = []
+  try {
+    rows = await db.select().from(siteSetting)
+  } catch {
+    // Fall back to SITE defaults if DB is unavailable
+  }
   const map = new Map(rows.map((r) => [r.key, r.value]))
 
   const g = SETTING_KEYS
@@ -93,7 +116,13 @@ export async function getLiveWithdrawalCharge(): Promise<number> {
 
 /** Convenience: returns pause flags + site freeze state. */
 export async function getPauseFlags(): Promise<{ depositsPaused: boolean; withdrawalsPaused: boolean; siteFrozen: boolean }> {
-  const rows = await db.select().from(siteSetting)
+  await dbReady
+  let rows: { key: string; value: string }[] = []
+  try {
+    rows = await db.select().from(siteSetting)
+  } catch {
+    // Fall back to all-false defaults if DB is unavailable
+  }
   const map = new Map(rows.map((r) => [r.key, r.value]))
   return {
     siteFrozen: map.get(SETTING_KEYS.siteFrozen) === "true",

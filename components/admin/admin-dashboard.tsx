@@ -88,6 +88,7 @@ import { approveDeposit, rejectDeposit } from "@/app/actions/deposit"
 import { PlanSlotsPanel } from "@/components/admin/plan-slots-panel"
 import { WithdrawalChargesConfig } from "@/components/admin/withdrawal-charges-config"
 import { TelegramConfig } from "@/components/admin/telegram-config"
+import { PackageManagerPanel } from "@/components/admin/package-manager-panel"
 
 const POLL_INTERVAL = 20_000 // 20 seconds
 
@@ -157,11 +158,13 @@ type Deposit = {
   createdAt: Date | string
   userEmail: string | null
   userId: string | null
+  userName?: string | null
   senderName: string | null
   assignedBankName: string | null
   assignedAccountNumber: string | null
   assignedAccountName: string | null
   bankAccountId: number | null
+  provider?: string | null
   expiresAt: Date | string | null
 }
 
@@ -324,6 +327,20 @@ type DrawRound = {
   executedAt: Date | string | null
 }
 
+type CustomPlan = {
+  id: number
+  name: string
+  price: string
+  daily: string
+  durationDays: number
+  points: number
+  maxPurchases: number | null
+  isActive: boolean
+  comingSoon: boolean
+  sortOrder: number
+  createdAt: Date | string
+}
+
 type AdminData = {
   stats: Stats
   withdrawals: Withdrawal[]
@@ -343,6 +360,7 @@ type AdminData = {
   drawSlots: DrawSlotRow[]
   gameStats: GameStats
   gameConfig: GameConfig
+  customPlans?: CustomPlan[]
 }
 
 type SlotRow = { planId: number; totalSlots: number | null; soldSlots: number; isActive: boolean }
@@ -380,6 +398,7 @@ export function AdminDashboard(initial: AdminData & { planSlots?: SlotRow[] }) {
   }, [refresh])
 
   const { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig } = data
+  // customPlans used directly via data.customPlans below
 
   const TAB_ICONS: Record<Tab, React.ReactNode> = {
     Overview:        <BarChart3 className="h-4 w-4" />,
@@ -472,6 +491,12 @@ export function AdminDashboard(initial: AdminData & { planSlots?: SlotRow[] }) {
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <WithdrawalChargesConfig onUpdate={() => refresh()} />
                 <TelegramConfig onUpdate={() => refresh()} />
+              </div>
+              <div className="mt-4">
+                <PackageManagerPanel
+                  initialPlans={data.customPlans ?? initialData.customPlans ?? []}
+                  onUpdate={() => refresh()}
+                />
               </div>
             </>
           )}
@@ -747,28 +772,6 @@ function Overview({ stats, controls, onAction, planSlots }: { stats: Stats; cont
           Pausing hides the action from users entirely and blocks new requests.
         </p>
         <div className="mt-3 flex flex-col gap-2">
-        {/* Site Freeze — single button that locks everything for non-admin users */}
-        <button
-          onClick={toggleFreeze}
-          disabled={savingFreeze}
-          className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
-            siteFrozen
-              ? "border-red-500/60 bg-red-500/15 text-red-400"
-              : "border-border bg-card text-muted-foreground"
-          }`}
-        >
-          <span>Freeze Entire Site</span>
-          <span className="flex items-center gap-1.5">
-            {savingFreeze ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : siteFrozen ? (
-              <><Lock className="h-4 w-4" /> Frozen</>
-            ) : (
-              <><Unlock className="h-4 w-4" /> Live</>
-            )}
-          </span>
-        </button>
-
         <button
           onClick={toggleDeposits}
           disabled={savingDep}

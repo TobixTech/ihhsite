@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Required to run instrumentation.ts (DB migration) before the first request
+  instrumentationHook: true,
   serverExternalPackages: ['better-auth', '@better-auth/kysely-adapter', 'kysely', 'pg'],
 }
 

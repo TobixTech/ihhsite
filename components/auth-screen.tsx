@@ -112,19 +112,19 @@ export function AuthScreen({ defaultInvite = "", promoCode = "" }: { defaultInvi
                 {SITE.tagline}
               </p>
               <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-3">
-                Grow Your Money.<br />Earn Daily.
+                Trade Smarter.<br />Earn Daily.
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-                Join thousands investing in construction projects and earning consistent daily returns. Start with just ₦{SITE.minDeposit.toLocaleString()}.
+                Join {SITE.name} and earn consistent daily returns across {SITE.packageCount} investment packages. Start with just ₦{SITE.minDeposit.toLocaleString()}.
               </p>
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2.5 mb-8">
-            <StatCard icon={TrendingUp} label="Daily Return" value="20%" />
-            <StatCard icon={Users} label="Referral Rate" value={`${SITE.referralLevel1}%`} />
-            <StatCard icon={Zap} label="Quick Payout" value="0-1 hr" />
+            <StatCard icon={TrendingUp} label="Daily Earnings" value="22%" />
+            <StatCard icon={Zap} label="Welcome Bonus" value={`₦${SITE.welcomeBonus.toLocaleString()}`} />
+            <StatCard icon={Users} label="Packages" value={`${SITE.packageCount}`} />
           </div>
 
           {/* Trust badges */}

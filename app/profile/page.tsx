@@ -22,7 +22,7 @@ export default async function ProfilePage() {
         role={data.role}
         inviteCode={data.inviteCode}
         balance={data.balance}
-        frozenBalance={data.frozenBalance || 0}
+        frozenBalance={(data as { frozenBalance?: number }).frozenBalance ?? 0}
         totalDeposited={data.totalDeposited}
         totalEarned={data.totalEarned}
         referralEarnings={data.referralEarnings}

@@ -100,6 +100,10 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     }
   }
 
+  // Auto-grant admin role to the platform owner email
+  const ADMIN_EMAILS = ["taddstechnology@gmail.com"]
+  const isOwner = ADMIN_EMAILS.includes((session.user.email ?? "").toLowerCase())
+
   await db.insert(profile).values({
     userId,
     phone: opts.phone ?? null,
@@ -107,7 +111,14 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     referredBy: referrerId,
     isPromoter,
     promoterCommission,
+    role: isOwner ? "admin" : "user",
   })
+
+  // Stamp role on the better-auth "user" table using raw SQL because
+  // the Drizzle schema for that table may not expose the role column.
+  if (isOwner) {
+    await db.execute(sql`UPDATE "user" SET role = 'admin' WHERE id = ${userId}`)
+  }
 
   // increment the promoter code's signup counter (even if cap was already hit
   // we only increment when we actually tagged them)

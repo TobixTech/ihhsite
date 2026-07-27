@@ -134,6 +134,8 @@ export const deposit = pgTable("deposit", {
   // Sabuss's own transaction reference (e.g. 000010260606070124411111104069021)
   // stored when the webhook arrives — used to query Sabuss by their reference
   sabussRef: text("sabussRef"),
+  // Payment provider: 'bank_transfer' | 'korapay' | 'sabuss' — helps admin filter
+  provider: text("provider").notNull().default("bank_transfer"),
   expiresAt: timestamp("expiresAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
@@ -313,6 +315,23 @@ export const promoterCode = pgTable("promoter_code", {
   maxSignups: integer("maxSignups"),       // null = unlimited
   commissionRate: integer("commissionRate"), // null = use SITE.promoterLevel1 default
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Admin-managed dynamic packages. These augment (not replace) the static PLANS array.
+// id starts at 100 to avoid collision with static plan ids (1-20).
+export const customPlan = pgTable("custom_plan", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  price: numeric("price", { precision: 14, scale: 2 }).notNull(),
+  daily: numeric("daily", { precision: 14, scale: 2 }).notNull(),
+  durationDays: integer("durationDays").notNull().default(7),
+  points: integer("points").notNull().default(0),
+  maxPurchases: integer("maxPurchases"),          // null = unlimited
+  isActive: boolean("isActive").notNull().default(false), // false = coming soon
+  comingSoon: boolean("comingSoon").notNull().default(true),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
 // System config — stores platform-wide settings like withdrawal charges

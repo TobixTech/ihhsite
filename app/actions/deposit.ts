@@ -85,32 +85,36 @@ export async function startDeposit(amount: number) {
 export async function approveDeposit(reference: string) {
   const [dep] = await db.select().from(deposit).where(eq(deposit.reference, reference))
   if (!dep) return { ok: false, message: "Deposit not found" }
-  if (dep.status === "success") return { ok: true, message: "Already approved" }
-  if (!["pending", "processing"].includes(dep.status)) {
+  if (!["pending", "processing", "success"].includes(dep.status)) {
     return { ok: false, message: "Deposit cannot be approved in current status" }
   }
+  // Track whether it was already SUCCESS before this call
+  const wasAlreadySuccess = dep.status === "success"
 
   const amount = Number(dep.amount)
   await db.update(deposit).set({ status: "success" }).where(eq(deposit.reference, reference))
 
-  // Upsert wallet — creates it if missing, credits it if it exists
+  // Always upsert wallet — handles fresh accounts and re-approvals for stuck SUCCESS deposits
   await db.execute(sql`
     INSERT INTO wallet ("userId", balance, "totalDeposited", "totalWithdrawn", "totalEarned", "referralEarnings", "updatedAt")
     VALUES (${dep.userId}, ${amount}, ${amount}, 0, 0, 0, now())
     ON CONFLICT ("userId") DO UPDATE SET
-      balance        = wallet.balance + ${amount},
+      balance          = wallet.balance + ${amount},
       "totalDeposited" = wallet."totalDeposited" + ${amount},
-      "updatedAt"    = now()
+      "updatedAt"      = now()
   `)
 
-  await db.insert(transaction).values({
-    userId: dep.userId,
-    type: "deposit",
-    amount: String(amount),
-    status: "completed",
-    reference,
-    description: `Deposit approved: ₦${amount.toLocaleString()}`,
-  })
+  // Only create a transaction record for new approvals to avoid duplicates
+  if (!wasAlreadySuccess) {
+    await db.insert(transaction).values({
+      userId: dep.userId,
+      type: "deposit",
+      amount: String(amount),
+      status: "completed",
+      reference,
+      description: `Deposit approved: ₦${amount.toLocaleString()}`,
+    })
+  }
 
   // Update the bank account stats so admin sees correct deposit count and total
   if (dep.bankAccountId) {

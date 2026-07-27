@@ -9,9 +9,10 @@ import {
   dailySignin,
   investment,
   promoterCode,
+  user as userTable,
 } from "@/lib/db/schema"
 import { SITE } from "@/lib/plans"
-import { getUserId, getSession } from "@/lib/session"
+import { getUserId, getSession } from "@/lib/session" // getSession used in initAccount
 import { accrueIncomeForUser } from "@/lib/income-engine"
 import { and, desc, eq, gte, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -21,10 +22,10 @@ export async function resolveLoginEmail(identifier: string): Promise<{ email: st
   const id = identifier.trim()
   if (!id) return { email: null }
   if (id.includes("@")) return { email: id.toLowerCase() }
-  // treat as phone number
+  // treat as phone number — look up via profile, then fetch email from user table
   const [p] = await db.select().from(profile).where(eq(profile.phone, id))
   if (!p) return { email: null }
-  const [u] = await db.select().from(userTable).where(eq(userTable.id, p.userId))
+  const [u] = await db.select({ email: userTable.email }).from(userTable).where(eq(userTable.id, p.userId))
   return { email: u?.email ?? null }
 }
 
@@ -113,10 +114,9 @@ export async function initAccount(opts: { phone?: string; inviteCode?: string; p
     role: isOwner ? "admin" : "user",
   })
 
-  // Stamp role on the better-auth "user" table using raw SQL because
-  // the Drizzle schema for that table may not expose the role column.
+  // Stamp role on the user table (role column now declared in schema)
   if (isOwner) {
-    await db.execute(sql`UPDATE "user" SET role = 'admin' WHERE id = ${userId}`)
+    await db.update(userTable).set({ role: "admin" }).where(eq(userTable.id, userId))
   }
 
   // increment the promoter code's signup counter (even if cap was already hit
@@ -165,12 +165,11 @@ export async function getDashboardData() {
   // accrue any pending daily income first
   await accrueIncomeForUser(userId)
 
-  // Fetch wallet, profile, and user identity (name/email come from the session
-  // since the Better Auth "user" table is not exposed as a Drizzle schema export)
-  const [[w], [p], sessionData] = await Promise.all([
+  // Fetch wallet, profile, and user identity in parallel
+  const [[w], [p], [u]] = await Promise.all([
     db.select().from(wallet).where(eq(wallet.userId, userId)),
     db.select().from(profile).where(eq(profile.userId, userId)),
-    getSession(),
+    db.select({ name: userTable.name, email: userTable.email }).from(userTable).where(eq(userTable.id, userId)),
   ])
 
   // today's sign-in status
@@ -182,8 +181,8 @@ export async function getDashboardData() {
     .where(and(eq(dailySignin.userId, userId), gte(dailySignin.signedAt, since)))
 
   return {
-    name: sessionData?.user?.name ?? "User",
-    email: sessionData?.user?.email ?? "",
+    name: u?.name ?? "User",
+    email: u?.email ?? "",
     phone: p?.phone ?? "",
     role: p?.role ?? "user",
     isPromoter: p?.isPromoter ?? false,
@@ -252,8 +251,11 @@ export async function getTransactions(limit = 50) {
 
 export async function updateProfile(data: { name?: string; phone?: string }) {
   const userId = await getUserId()
-  if (data.name) {
-    await db.update(userTable).set({ name: data.name, updatedAt: new Date() }).where(eq(userTable.id, userId))
+  if (data.name?.trim()) {
+    await db
+      .update(userTable)
+      .set({ name: data.name.trim(), updatedAt: new Date() })
+      .where(eq(userTable.id, userId))
   }
   if (data.phone !== undefined) {
     await db.update(profile).set({ phone: data.phone }).where(eq(profile.userId, userId))

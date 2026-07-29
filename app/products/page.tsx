@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
 import { getPublicPlanSlots } from '@/app/actions/investments'
+import { getCustomPlans } from '@/app/actions/admin'
 import { AppHeader } from '@/components/app-header'
 import { BottomNav } from '@/components/bottom-nav'
 import { PlanCard } from '@/components/plan-card'
@@ -13,14 +14,22 @@ export default async function ProductsPage() {
   const session = await getSession()
   if (!session?.user) redirect('/')
 
-  const planSlots = await getPublicPlanSlots()
+  const [planSlots, customPlans] = await Promise.all([
+    getPublicPlanSlots(),
+    getCustomPlans(),
+  ])
 
   const activePlans = PLANS.filter((p) => !p.soldOut && !p.comingSoon)
   const comingSoonPlans = PLANS.filter((p) => p.comingSoon)
+  
+  // Custom packages: separate active and coming soon
+  const customActivePlans = customPlans.filter((p) => p.isActive && !p.comingSoon)
+  const customComingSoonPlans = customPlans.filter((p) => p.comingSoon)
 
-  // Min / max daily among active plans
-  const minDaily = Math.min(...activePlans.map((p) => p.daily))
-  const maxDaily = Math.max(...activePlans.map((p) => p.daily))
+  // Min / max daily among all active plans (static + custom)
+  const allActivePlans = [...activePlans, ...customActivePlans]
+  const minDaily = allActivePlans.length > 0 ? Math.min(...allActivePlans.map((p) => Number(p.daily))) : 0
+  const maxDaily = allActivePlans.length > 0 ? Math.max(...allActivePlans.map((p) => Number(p.daily))) : 0
 
   return (
     <div className="min-h-screen pb-28">
@@ -33,8 +42,8 @@ export default async function ProductsPage() {
           <StatCard
             icon={Layers}
             label="Active Packages"
-            value={`${activePlans.length} plans`}
-            sub="7-day cycle"
+            value={`${allActivePlans.length} plans`}
+            sub="15-day cycle"
           />
           <StatCard
             icon={TrendingUp}
@@ -52,16 +61,16 @@ export default async function ProductsPage() {
           <StatCard
             icon={Clock}
             label="Coming Soon"
-            value={`${comingSoonPlans.length} packages`}
+            value={`${comingSoonPlans.length + customComingSoonPlans.length} packages`}
             sub="releasing soon"
           />
         </div>
 
-        {/* Active plans — full list */}
+        {/* Active plans — full list (static + custom) */}
         <section className="mb-6">
           <SectionHeader
             title="Active Packages"
-            count={activePlans.length}
+            count={allActivePlans.length}
             badge="Live"
             badgeColor="bg-success/15 text-success border-success/25"
           />
@@ -69,15 +78,18 @@ export default async function ProductsPage() {
             {activePlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} slot={planSlots.find((s) => s.planId === plan.id)} />
             ))}
+            {customActivePlans.map((plan) => (
+              <PlanCard key={`custom-${plan.id}`} plan={plan} slot={undefined} />
+            ))}
           </div>
         </section>
 
-        {/* Coming soon */}
-        {comingSoonPlans.length > 0 && (
+        {/* Coming soon (static + custom) */}
+        {(comingSoonPlans.length + customComingSoonPlans.length) > 0 && (
           <section className="mb-4">
             <SectionHeader
               title="Coming Soon"
-              count={comingSoonPlans.length}
+              count={comingSoonPlans.length + customComingSoonPlans.length}
               badge="Soon"
               badgeColor="bg-primary/15 text-primary border-primary/25"
             />
@@ -87,6 +99,9 @@ export default async function ProductsPage() {
             <div className="flex flex-col gap-2.5">
               {comingSoonPlans.map((plan) => (
                 <PlanCard key={plan.id} plan={plan} slot={planSlots.find((s) => s.planId === plan.id)} />
+              ))}
+              {customComingSoonPlans.map((plan) => (
+                <PlanCard key={`custom-${plan.id}`} plan={plan} slot={undefined} />
               ))}
             </div>
           </section>

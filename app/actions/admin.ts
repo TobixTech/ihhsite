@@ -1342,7 +1342,7 @@ export async function getAdminData() {
   return { stats, withdrawals, users, giftCodes, deposits, bankAccounts, milestones, controls, transactions, promoterCodes, investments, financials, drawRounds, spins, vaults, drawSlots, gameStats, gameConfig, customPlans }
 }
 
-// ── Sabuss Deposit Check (Admin) ──────────────────────────────────────────────
+// ── Sabuss Deposit Check (Admin) ────────────────────────────────��─────────────
 
 /**
  * Admin-facing Sabuss check — queries the Sabuss API for the deposit's account
@@ -1517,10 +1517,15 @@ export type CustomPlanInput = {
   sortOrder: number
 }
 
-/** Fetch all admin-created plans */
+/** Fetch all admin-created plans (admin only) */
 export async function getCustomPlans() {
   await requireAdmin()
   return db.select().from(customPlan).orderBy(asc(customPlan.sortOrder), asc(customPlan.id))
+}
+
+/** Fetch active custom plans for public display (no auth required) */
+export async function getPublicCustomPlans() {
+  return db.select().from(customPlan).where(eq(customPlan.isActive, true)).orderBy(asc(customPlan.sortOrder), asc(customPlan.id))
 }
 
 /** Create a new custom plan */

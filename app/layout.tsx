@@ -30,15 +30,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Crox Exchange — Trade · Earn · Grow',
-    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 7-day cycles, instant withdrawals.',
+    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 15-day cycles, instant withdrawals.',
     siteName: 'Crox Exchange',
     url: SITE_URL,
     type: 'website',
     images: [
       {
         url: '/og.png',
-        width: 1200,
-        height: 630,
+        width: 1254,
+        height: 1254,
         alt: 'Crox Exchange — Trade · Earn · Grow',
       },
     ],
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Crox Exchange — Trade · Earn · Grow',
-    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 7-day cycles, instant withdrawals.',
+    description: 'Earn consistent daily returns with Crox Exchange. 11 packages, 15-day cycles, instant withdrawals.',
     images: ['/og.png'],
   },
   // app/icon.png and app/apple-icon.png are auto-served by Next.js file convention

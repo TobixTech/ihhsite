@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
 import { getPublicPlanSlots } from '@/app/actions/investments'
-import { getCustomPlans } from '@/app/actions/admin'
+import { getPublicCustomPlans } from '@/app/actions/admin'
 import { AppHeader } from '@/components/app-header'
 import { BottomNav } from '@/components/bottom-nav'
 import { PlanCard } from '@/components/plan-card'
@@ -16,7 +16,7 @@ export default async function ProductsPage() {
 
   const [planSlots, customPlans] = await Promise.all([
     getPublicPlanSlots(),
-    getCustomPlans(),
+    getPublicCustomPlans(),
   ])
 
   const activePlans = PLANS.filter((p) => !p.soldOut && !p.comingSoon)

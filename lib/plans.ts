@@ -1,15 +1,16 @@
 export type Plan = {
   id: number
   name: string
-  price: number
-  daily: number
-  total: number
+  price: number | string
+  daily: number | string
+  total?: number | string
   durationDays: number
   points?: number
   popular?: boolean
   soldOut?: boolean       // legacy plans — hidden from products page
   maxPurchases?: number   // max times a single user can buy this plan
   comingSoon?: boolean    // shows Coming Soon badge, blocks purchase
+  isActive?: boolean      // for custom plans from DB
 }
 
 // Tier labels — grouped by exchange phase
@@ -120,6 +121,9 @@ export const SITE = {
   },
 }
 
-export function formatNaira(value: number): string {
-  return '₦' + value.toLocaleString('en-NG')
+export function formatNaira(value: number | string | undefined): string {
+  if (value === undefined || value === null || value === '') return '₦0'
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  if (isNaN(num)) return '₦0'
+  return '₦' + num.toLocaleString('en-NG')
 }

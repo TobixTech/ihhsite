@@ -18,6 +18,7 @@ export const auth = betterAuth({
     // C.I.Limited production domains
     "https://conltd.site",
     "https://www.conltd.site",
+    "https://crox.conltd.site",
     // Legacy subdomains — kept during migration period
     "https://cil.incumb.fun",
     "https://ihh.incumb.fun",
